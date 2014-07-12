@@ -1,0 +1,1875 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+ 
+ <title>xiaoshenge</title>
+ <link href="http://xiaoshenge.github.io/" rel="self"/>
+ <link href="http://xiaoshenge.github.io"/>
+ <updated>2014-07-12T23:38:23+08:00</updated>
+ <id>http://xiaoshenge.github.io</id>
+ <author>
+   <name>xiaoshenge</name>
+   <email>xiaoshengeer@gmail.com</email>
+ </author>
+
+ 
+ <entry>
+   <title>Heartbeat nginx</title>
+   <link href="http://xiaoshenge.github.io/skill/2014/07/12/heartbeat-nginx"/>
+   <updated>2014-07-12T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2014/07/12/heartbeat-nginx</id>
+   <content type="html">&lt;h2 id=&quot;section&quot;&gt;安装&lt;/h2&gt;
+
+&lt;p&gt;系统：Red Hat Enterprise Linux Server release 6.4 (Santiago)
+http://hg.linux-ha.org/&lt;/p&gt;
+
+&lt;p&gt;1.添加账号&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;groupadd -g 5000 haclient
+useradd -u 5000 -g haclient hacluster
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;2.&lt;a href=&quot;http://hg.linux-ha.org/glue/archive/tip.tar.gz&quot;&gt;glue&lt;/a&gt; &lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;./autogen.sh 
+./configure --prefix=/usr
+make
+make install
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;遇到的问题：
+指定prefix到/usr ，如果不指定后面安装其他的组件的时候导致和其他组件目录冲突（导致组件安装不到同一个目录，比如/usr/lib64/heartbeat, /usr/local/heartbeat）, 建议prefix是/usr,这样方便后面安装heartbeat不需要指定头文件。&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;安装过程会遇到依赖问题：缺少asciidoc,下载安装即可(不需指定prefix)。缺少libtool-ltdl，下载libtool安装后还是报错缺少libtool，通过查资料猜测可能是版本问题。然后通过rpm查找系统默认安装的libtool，rpm -qa&lt;/td&gt;
+      &lt;td&gt;grep libtool 发现默认安装的是libtool-2.2.6，然后下载对应的libtool安装后解决。&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;3.&lt;a href=&quot;https://github.com/ClusterLabs/resource-agents&quot;&gt;Cluster Resource Agents&lt;/a&gt;
+	./autogen.sh 
+	./configure –prefix=/usr
+	make
+	make install&lt;/p&gt;
+
+&lt;p&gt;4.&lt;a href=&quot;http://hg.linux-ha.org/heartbeat-STABLE_3_0/archive/tip.tar.gz&quot;&gt;Heartbeat 3.0&lt;/a&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;./bootstrap 
+./configure --prefix=/usr
+make
+make install
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/ClusterLabs/pacemaker-1.0&quot;&gt;pacemaker-1.0&lt;/a&gt;
+ ./autogen.sh 
+ ./configure –prefix=/usr
+ make
+ make install&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;遇到的问题：pacemaker依赖：&lt;a href=&quot;https://github.com/ClusterLabs/libqb&quot;&gt;libqb&lt;/a&gt;, &lt;a href=&quot;https://github.com/corosync/corosync&quot;&gt;corosync&lt;/a&gt;
+安装1.0版本原因：github有2个版本，安装pacemake的时候编译不通过，需要删掉pkg-config检查libqb版本的方法才能编译通过，所以就安装了pacemaker1.0版本。&lt;/p&gt;
+
+&lt;h2 id=&quot;section-1&quot;&gt;配置&lt;/h2&gt;
+
+&lt;p&gt;/usr/etc/ha.d/ha.cf&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;debugfile /var/log/ha-debug  
+logfile /var/log/ha-log   
+logfacility     local0
+crm on  #是否开启Cluster Resource Manager（集群资源管理）功能。  
+bcast eth0 #指明心跳使用以太网广播方式，并且是在eth1接口上进行广播。  
+keepalive 2 #指定心跳间隔时间为2秒（即每两秒钟在eth1上发送一次广播）。  
+deadtime 30 #指定备用节点在30秒内没有收到主节点的心跳信号后，则立即接管主节点的服务资源。  
+warntime 10 #指定心跳延迟的时间为十秒。当10秒钟内备份节点不能接收到主节点的心跳信号时，就会往日志中写入一个警告日志，但此时不会切换服务。  
+initdead 120 #在某些系统上，系统启动或重启之后需要经过一段时间网络才能正常工作，该选项用于解决这种情况产生的时间间隔。取值至少为deadtime的两倍。   
+udpport 694 #设置广播通信使用的端口，694为默认使用的端口号。(如果开启了iptables，对应机器要打开UDP的694端口)  
+baud 19200 #设置串行通信的波特率。  
+ucast eth0 192.168.1.2 #采用网卡eth0的udp单播来组织心跳，后面跟的IP地址应为双机对方的IP地址。  (主节点就写从节点的ip， 从节点就写主节点的ip)
+auto_failback on #用来定义当主节点恢复后，是否将服务自动切回，heartbeat的两台主机分别为主节点和备份节点。主节点在正常情况下占用资源并运行所有的服务，遇到故障时把资源交给备份节点并由备份节点运行服务。在该选项设为on的情况下，一旦主节点恢复运行，则自动获取资源并取代备份节点，如果该选项设置为off，那么当主节点恢复后，将变为备份节点，而原来的备份节点成为主节点。  
+node node1 #主节点主机名，可以通过命令“uanme –n”查看。  
+node node2 #备用节点主机名。  
+ping 192.168.12.1 #选择ping的节点，ping 节点选择的越好，HA集群就越强壮，可以选择固定的路由器作为ping节点，但是最好不要选择集群中的成员作为ping节点，ping节点仅仅用来测试网络连接。  
+respawn hacluster /usr/lib64/heartbeat/ipfail
+respawn hacluster /usr/lib64/heartbeat/cibmon -d
+apiauth ipfail gid=haclient uid=hacluster
+apiauth cibmon gid=haclient uid=hacluster
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;haresource
+	#pacemaker cms 需要将其转化为xml /usr/lib64/heartbeat/haresources2cib.py /usr/etc/ha.d/haresources 生成的文件在/usr/var/lib/heartbeat/crm/cib.xml
+	redhat6.4_3     10.21.192.238 nginx #主节点名 vip 服务（/etc/init.d/里面要有对应的控制脚本start|stop|status）
+authkeys
+	#authkeys 权限是600
+	auth 1
+	1 crc&lt;/p&gt;
+
+&lt;h3 id=&quot;crm-&quot;&gt;crm 配置及监控&lt;/h3&gt;
+
+&lt;p&gt;监控：crm_mon -Afr&lt;/p&gt;
+
+&lt;p&gt;配置: node1,node2的heartbeat启动后：默认配置是node1的nginx挂掉后，crm会自动重启nginx不会迁移到node2，需配置&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;/*
+默认：migration-threshold=1000000	fail-count=1
+通过nginx stop， crm_mon --failcounts可以查看
+执行crm configure报错ERROR: You may try the upgrade command， 执行cibadmin --upgrade --force即可解决
+*/
+crm configure rsc_defaults migration-threshold=1
+crm configure rsc_defaults failure-timeout=10s
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;section-2&quot;&gt;参考&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&quot;http://hg.linux-ha.org/&quot;&gt;linux-ha&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.linux-ha.org/doc/users-guide/users-guide.html&quot;&gt;The Linux-HA User’s Guide&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.novell.com/zh-cn/documentation/sle_ha/book_sleha/data/book_sleha.html&quot;&gt;High Availability 指南&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://club.topsage.com/thread-530648-1-1.html&quot;&gt;Heartbeat实现Nginx高可用性(style 1.x) &lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://club.topsage.com/thread-530655-1-1.html&quot;&gt;Heartbeat实现Nginx高可用性(style 2.x)&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://ixdba.blog.51cto.com/2895551/745228&quot;&gt;Heartbeat3.x应用全攻略之：概念组成及工作原理&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://ixdba.blog.51cto.com/2895551/746271&quot;&gt;Heartbeat3.x应用全攻略之：安装、配置、维护&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://my.oschina.net/lianshunke/blog/200411&quot;&gt;heartbeat + pacemaker实现pg流复制自动切换&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://my.oschina.net/guol/blog/90128&quot;&gt;Heartbeat3.0.5+pacemaker&lt;/a&gt;&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>PHP正则笔记</title>
+   <link href="http://xiaoshenge.github.io/skill/2013/04/21/php-reg"/>
+   <updated>2013-04-21T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2013/04/21/php-reg</id>
+   <content type="html">&lt;h4 id=&quot;section&quot;&gt;中文字符&lt;/h4&gt;
+&lt;p&gt;gbk编码下中文字符正则会出现乱码问题：解决方案是转码用utf8&lt;/p&gt;
+
+&lt;p&gt;中文字符匹配正则:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;UTF-8:/[\u{4e00}-\u{9fff}]/u
+GBK:/([\xb0-\xfe][\x00-xff])+/
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;utf8必须指定Unicode模式，gbk下匹配多个字符，必须添加括号将两个字节将两个字节作为一组&lt;/p&gt;
+
+&lt;h4 id=&quot;section-1&quot;&gt;. * 的滥用&lt;/h4&gt;
+&lt;pre&gt;&lt;code&gt;&amp;lt;?php
+$str = &amp;lt;&amp;lt;&amp;lt;EOF
+&amp;lt;h4&amp;gt;第1集&amp;lt;/h4&amp;gt;
+aaa
+aaa
+&amp;lt;h4&amp;gt;第2集&amp;lt;/h4&amp;gt;
+bbbbb
+EOF;
+
+$reg1 = &quot;/&amp;lt;h4&amp;gt;(.*?)&amp;lt;\/h4&amp;gt;(.*)/Us&quot;;
+
+$reg2 = &quot;/&amp;lt;h4&amp;gt;(.*?)&amp;lt;\/h4&amp;gt;(((?!&amp;lt;h4&amp;gt;).)*)/s&quot;;
+
+preg_match_all($reg1, $str, $match1);
+preg_match_all($reg2, $str, $match2);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;$reg1用的是. * , h4下面的内容就匹配不到，改用$reg2就可以解决问题&lt;/p&gt;
+
+&lt;h4 id=&quot;section-2&quot;&gt;中文乱码的情况&lt;/h4&gt;
+&lt;pre&gt;&lt;code&gt;&amp;lt;?php
+$str = &amp;lt;&amp;lt;&amp;lt;EOF
+&amp;lt;a href=&quot;a-中文.html&quot;&amp;gt;中文&amp;lt;/a&amp;gt;， 英文，懂中文
+EOF;
+
+$reg = &#39;/[^-&amp;gt;]中文/&#39;;
+$replace = &quot;&amp;lt;a&amp;gt;不懂中文&amp;lt;/a&amp;gt;&quot;
+
+$str = preg_replace($reg, $replace, $str, 1);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;str出现乱码,解决方案：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$reg = &#39;(.*[^-|])(中文)&#39;;
+
+$str = preg_replace($reg, &quot;$1{$replace}&quot;, $str, 1);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;第一种方法$reg是整体，替换就会把[^-&amp;gt;]替换，所以要把$reg分成2个部分&lt;/p&gt;
+
+&lt;p&gt;[]()&lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>ios view controller</title>
+   <link href="http://xiaoshenge.github.io/skill/2013/03/12/ios-view-controller"/>
+   <updated>2013-03-12T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2013/03/12/ios-view-controller</id>
+   <content type="html">&lt;p&gt;&lt;a href=&quot;http://developer.apple.com/library/ios/#featuredarticles/ViewControllerPGforiPhoneOS/Introduction/Introduction.html#//apple_ref/doc/uid/TP40007457&quot;&gt;View Controller Programming Guide for iOS&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;instantiating-another-view-controller-inside-the-same-storyboard&quot;&gt;Instantiating another view controller inside the same storyboard&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code&gt;-(void)viewDidAppear:(BOOL)animated{
+	 UIStoryboard *storyboard = self.storyboard;
+SpecialViewController *svc = [storyboard instantiateViewControllerWithIdentifier:@&quot;SpecialViewController&quot;];
+ 
+// Configure the new view controller here.
+ 
+[self presentViewController:svc animated:YES completion:nil];
+}
+
+- (IBAction)showAnotherView:(id)sender{
+	UIViewController *splitView = [self.storyboard instantiateViewControllerWithIdentifier:@&quot;SplitView&quot;];
+    XReaderAppDelegate *app = (XReaderAppDelegate *)[[UIApplication sharedApplication] delegate];
+    [app.window setRootViewController:splitView];
+} ###Instantiating a view controller from a new storyboard###
+ 
+- (IBAction)gotoView2:(id)sender
+{
+UIViewController *testView = [[UIStoryboard storyboardWithName:@&quot;test2&quot; bundle:nil] instantiateInitialViewController];
+[self presentViewController:testView animated:YES completion:nil];
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>git常用命令</title>
+   <link href="http://xiaoshenge.github.io/skill/2013/03/05/git-command"/>
+   <updated>2013-03-05T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2013/03/05/git-command</id>
+   <content type="html">&lt;p&gt;&lt;a href=&quot;http://robbinfan.com/blog/34/git-common-command&quot;&gt;git常用备忘录&lt;/a&gt;&lt;/p&gt;
+
+&lt;h6 id=&quot;section&quot;&gt;查看提交历史&lt;/h6&gt;
+&lt;pre&gt;&lt;code&gt;git log
+git log &amp;lt;file&amp;gt; #查看该文件提交历史记录
+git log -p &amp;lt;file&amp;gt; #查看每次详细修改内容的diff
+git log -p &amp;lt;file&amp;gt; -2 #查看最近2次详细修改内容的diff
+git log --stat #查看提交统计信息
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h6 id=&quot;section-1&quot;&gt;恢复已删除文件&lt;/h6&gt;
+&lt;pre&gt;&lt;code&gt;git checkout file #直接rm的文件还没有commit
+git checkout HEAD~1 --file #从上一次提交中恢复file
+&lt;/code&gt;&lt;/pre&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>linux selinux</title>
+   <link href="http://xiaoshenge.github.io/skill/2012/11/30/linux-selinux"/>
+   <updated>2012-11-30T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2012/11/30/linux-selinux</id>
+   <content type="html">&lt;p&gt;在centos下使用samb一直都提示位置不对，但是ssh可以连接上就没怀疑是本地限制问题，一直以为是网络问题，导致纠结了老久。
+先记录一下selinx：
+临时关闭：setenforce 0
+永久关闭：/etc/selinux/config SELINUX=disabled
+[]()&lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>ios学习笔记</title>
+   <link href="http://xiaoshenge.github.io/skill/2012/10/23/learning-ios"/>
+   <updated>2012-10-23T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2012/10/23/learning-ios</id>
+   <content type="html">&lt;h2 id=&quot;start-developing-ios-apps-todayhttpdeveloperapplecomlibraryiosreferencelibrarygettingstartedroadmapioschaptersintroductionhtml&quot;&gt;&lt;a href=&quot;http://developer.apple.com/library/ios/#referencelibrary/GettingStarted/RoadMapiOS/chapters/Introduction.html&quot;&gt;Start Developing iOS Apps Today&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&quot;http://developer.apple.com/library/ios/#referencelibrary/GettingStarted/RoadMapiOSCh/chapters/Introduction.html&quot;&gt;中文版&lt;/a&gt;
+&amp;gt; &lt;a href=&quot;http://developer.apple.com/library/ios/#referencelibrary/GettingStarted/RoadMapiOS/chapters/RM_YourFirstApp_iOS/Articles/00_Introduction.html&quot;&gt;Your First iOS App&lt;/a&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;objective-c&quot;&gt;Objective-C&lt;/h2&gt;
+&lt;ol&gt;
+  &lt;li&gt;&lt;a href=&quot;http://developer.apple.com/library/ios/#documentation/Cocoa/Conceptual/ObjectiveC/Introduction/introObjectiveC.html#//apple_ref/doc/uid/TP30001163&quot;&gt;The Objective-C Programming Language&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://developer.apple.com/library/ios/#documentation/Cocoa/Conceptual/ProgrammingWithObjectiveC/Introduction/Introduction.html#//apple_ref/doc/uid/TP40011210&quot;&gt;Programming with Objective-C&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id=&quot;doucument&quot;&gt;doucument&lt;/h2&gt;
+&lt;ol&gt;
+  &lt;li&gt;&lt;a href=&quot;https://developer.apple.com/library/ios/#documentation/iPhone/Conceptual/iPhoneOSProgrammingGuide/Introduction/Introduction.html#//apple_ref/doc/uid/TP40007072&quot;&gt;iOS App Programming Guide&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id=&quot;section&quot;&gt;其他&lt;/h2&gt;
+&lt;ol&gt;
+  &lt;li&gt;&lt;a href=&quot;http://www.cocoachina.com/bbs/read.php?tid-7923.html&quot;&gt;如何联机调试和发布程序(99$)&lt;/a&gt;
+&amp;gt; 借用别人的开发者账号学习，在Certificates Development使用的是别人已经存在的，下载到自己机器，然后调试代码的时候始终报错： non-expired certificate/private key pair in you keychain.由于开始不敢随便操作Certificates就一直不知道怎么解决，后来想既然是development修改也不会影响distribution的，就把之前的那个development的certificate revoke了，安装教程重新操作一次就ok了。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;2.&lt;a href=&quot;http://www.ravelrumba.com/blog/ipad-http-debugging/&quot;&gt;iPad HTTP Debugging with Charles&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.apple.com.cn/developer/&quot;&gt;苹果开发者联盟&lt;/a&gt;&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>代理</title>
+   <link href="http://xiaoshenge.github.io/skill/2012/10/22/proxy"/>
+   <updated>2012-10-22T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2012/10/22/proxy</id>
+   <content type="html">&lt;p&gt;1.goagent&lt;/p&gt;
+
+&lt;p&gt;2.vps
+###mac###&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;ssh -D 7000 user@host
+
+proxy switch sharp socke5代理：localhost 7000 请注意选择socket v5
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://zhengyaotian.com/System/Mac%E4%B8%8B%E6%9C%80%E7%AE%80%E5%8D%95%E7%9A%84%E7%BF%BB%E5%A2%99%E6%8A%80%E5%B7%A7&quot;&gt;参考&lt;/a&gt;&lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>PHP常用header</title>
+   <link href="http://xiaoshenge.github.io/skill/2012/10/10/php-header"/>
+   <updated>2012-10-10T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2012/10/10/php-header</id>
+   <content type="html">&lt;p&gt;PHP is not limited to outputting html. PHP can output images, pdf, javascript files, etc. Browsers determine what type of content is by analyzing the headers sent. In this tutorial I will present you with some examples of how to send headers. To send PHP header use the function header(). You must call this function before any output. Use the function headers_sent() to check whether the headers have been sent and output started. &lt;/p&gt;
+
+&lt;p&gt;301 moved permanently (redirect):&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;?php 
+header(&#39;HTTP/1.1 301 Moved Permanently&#39;);
+header(&#39;Location: http://www.example.com&#39;);
+die();
+?&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;302 moved temporarily(redirect):&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;?php 
+header(&#39;Location: http://www.example.com&#39;);
+die();
+?&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;404 Page Not Found: &lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;?php 
+header(&#39;HTTP/1.1 404 Not Found&#39;);
+?&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Service not avaliable: &lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;?php 
+header(&#39;HTTP/1.1 503 Service Temporarily Unavailable&#39;);
+header(&#39;Status: 503 Service Temporarily Unavailable&#39;);
+header(&#39;Retry-After: 60&#39;);
+?&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;CSS: &lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;?php
+header(&#39;Content-Type: text/css&#39;);
+?&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Javascript header: &lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;?php 
+header(&#39;Content-Type: application/javascript&#39;);
+?&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Images:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;For JPEG(jpg): 
+&amp;lt;?php 
+header(&#39;Content-Type: image/jpeg&#39;);
+?&amp;gt; 
+For PNG: 
+&amp;lt;?php 
+header(&#39;Content-Type: image/png&#39;);
+?&amp;gt; 
+For BMP: 
+&amp;lt;?php 
+header(&#39;Content-Type: image/bmp&#39;);
+?&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;PDF (output pdf with php): &lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;?php 
+header(&#39;Content-Type: application/pdf&#39;);
+echo file_get_contents(&#39;filename.pdf&#39;);
+?&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Cache (force browsers not to cache files): &lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;?php 
+header(&#39;Expires: Sat, 26 Jul 1997 05:00:00 GMT&#39;);
+header(&#39;Cache-Control: no-store, no-cache, must-revalidate&#39;);
+header(&#39;Cache-Control: pre-check=0, post-check=0, max-age=0&#39;);
+header (&#39;Pragma: no-cache&#39;); 
+?&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Download dialog: &lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;?php 
+header(&#39;Content-Disposition: attachment; filename=&#39; . urlencode($f));   
+header(&#39;Content-Type: application/force-download&#39;);
+header(&#39;Content-Type: application/octet-stream&#39;);
+header(&#39;Content-Type: application/download&#39;);
+header(&#39;Content-Description: File Transfer&#39;);            
+header(&#39;Content-Length: &#39; . filesize($f));
+echo file_get_contents($f);
+?&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Authentication (force the browser to pop up a Username/Password input window) - only available when PHP is running as an Apache module: &lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;?php
+if (!isset($_SERVER[&#39;PHP_AUTH_USER&#39;])) {
+    header(&#39;WWW-Authenticate: Basic realm=&quot;The Realm&quot;&#39;);
+    header(&#39;HTTP/1.0 401 Unauthorized&#39;);
+    echo &#39;If cancel is pressed this text shows&#39;;
+    die();
+} else {
+//always escape your data//
+$user=&#39;user&#39;;
+$pass=&#39;pass&#39;;
+   if($_SERVER[&#39;PHP_AUTH_USER&#39;]==$user &amp;amp;&amp;amp; $_SERVER[&#39;PHP_AUTH_PW&#39;]==$pass){
+    echo &#39;Authorized&#39;;
+}
+}
+?&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;php header编码&lt;/p&gt;
+
+&lt;p&gt;header(“Content-type: text/html; charset=utf-8”); &lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://phpweby.com/tutorials/php/35&quot;&gt;参考&lt;/a&gt;&lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>常用svn操作</title>
+   <link href="http://xiaoshenge.github.io/skill/2012/10/09/svn"/>
+   <updated>2012-10-09T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2012/10/09/svn</id>
+   <content type="html">&lt;p&gt;搭建 svn服务器安装Subversion 
+#apt-get install subversion 
+新建存储仓库 
+#mkdir /home/svnrepos 
+#svnadmin create /home/svnrepos/TestProject 
+修改配置 
+#cd /home/svnreos/TestProject/conf 
+#vim  svnserve.conf 
+取消下面几行的注释： 
+anon-access = read            #匿名用户权限（read,write,none） 
+auth-access = write                                      #认证用户权限（read,write,none） 
+password-db = passwd                      #用户账户管理(passwd 为文件名称，这里使用了相对路径) 
+#vim passwd 
+添加svn用户 
+svnuser = password                                     #指定（用户名 = 密码） 
+导入项目 
+假如项目在/opt/TestProject 目录 
+#svn import –m “My TestProject Imported” /opt/TestProject  file:///home/svnrepos/TestProject 
+提交后提示版本为1 
+启动SVN服务器 
+#svnserve –d –r /home/svnrepos –listen-host 172.31.134.100 (Your Ip Addr) 
+注意：这里svnrepos后边不能有/,新版本的svn需要 把 –listen-host 172.31.134.100 替换成 –listen-port 3690） 
+-d: 在后台运行 
+-r: 指定svn服务器根目录 
+–listen-host: 指定监听IP 
+测试SVN 
+在其他机器上使用 svn://172.31.134.100/TestProject 
+用户名：svnuser  密码：password 
+访问svn服务。 &lt;/p&gt;
+
+&lt;p&gt;附录 A 开机自动启动svn服务 
+在 /etc/init.d 目录下谢一个脚本svnd.sh，内容如下： 
+#!/bin/bash 
+/usr/bin/svnserve -d -r /home/svnrepos 
+然后执行： 
+#update-rc.d svnd.sh defaults 
+#chmod 777 /etc/init.d/svnd.sh &lt;/p&gt;
+
+&lt;p&gt;svn ignore&lt;/p&gt;
+
+&lt;p&gt;svn propedit svn:ignore 目录名称。注意，在使用这个SVN的属性编辑前，你得确保后面的“目录名称”是SVN版本控制的目录。&lt;/p&gt;
+
+&lt;p&gt;设置SVN默认的编辑器 /etc/profile
+#export SVN_EDITOR=vim&lt;/p&gt;
+
+&lt;p&gt;svn propedit svn:ignore /product&lt;/p&gt;
+
+&lt;p&gt;此时会出现一个VIM的编辑窗口，表示需要将某个文件加入到忽略列表里&lt;/p&gt;
+
+&lt;p&gt;我们在编辑窗口中，写入&lt;/p&gt;
+
+&lt;p&gt;test.php&lt;/p&gt;
+
+&lt;p&gt;然后保存，并退出VIM编辑器。&lt;/p&gt;
+
+&lt;p&gt;这时候会有一个提示：属性 “svn:ignore” 于 “product” 被设为新值。&lt;/p&gt;
+
+&lt;p&gt;表示文件test.php的svn:ignore属性设置成功。&lt;/p&gt;
+
+&lt;p&gt;然后使用svn st查看，会显示：&lt;/p&gt;
+
+&lt;p&gt;M        product&lt;/p&gt;
+
+&lt;p&gt;我们需要提交，然后这个svn:ignore属性才会起作用&lt;/p&gt;
+
+&lt;h2 id=&quot;section&quot;&gt;设置同步脚本&lt;/h2&gt;
+&lt;p&gt;cd /www/svndata/oplinux/hooks/&lt;/p&gt;
+
+&lt;p&gt;cp post-commit.tmpl post-commit&lt;/p&gt;
+
+&lt;p&gt;编辑post-commit,在文件最后添加以下内容&lt;/p&gt;
+
+&lt;p&gt;export LANG=en_US.UTF-8&lt;/p&gt;
+
+&lt;p&gt;SVN=/usr/bin/svn&lt;/p&gt;
+
+&lt;p&gt;WEB=/www/webroot/&lt;/p&gt;
+
+&lt;p&gt;$SVN update $WEB –username rsync –password rsync&lt;/p&gt;
+
+&lt;p&gt;chown -R apache:apache $WEB&lt;/p&gt;
+
+&lt;p&gt;增加脚本执行权限
+chmod +x post-commit
+&lt;a href=&quot;http://oplinux.com/app/svn/linux-yum-install-svn.html&quot;&gt;参考1&lt;/a&gt;
+&lt;a href=&quot;http://hi.baidu.com/phplinuxmysql/item/5146931478630e0a8ebde41b&quot;&gt;参考2&lt;/a&gt;&lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>如何在你自己的服务器搭建类似github的服务,git部署站点</title>
+   <link href="http://xiaoshenge.github.io/skill/2012/10/09/git"/>
+   <updated>2012-10-09T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2012/10/09/git</id>
+   <content type="html">&lt;h2 id=&quot;section&quot;&gt;分支开发&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&quot;http://www.oschina.net/translate/a-successful-git-branching-model&quot;&gt;介绍一个成功的 Git 分支模型&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://nvie.com/posts/a-successful-git-branching-model/&quot;&gt;A successful Git branching model&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;前言：如果你使用git管理代码（不希望公开的），但是没有钱买github的服务，你可以再自己的服务器上搭建git服务器（这里只写支持ssh协议的，与github差的太远了，希望不要怪我这个标题党）。同时如果你用git部署项目的话，只需要一条pull命令就可以把测试机上的代码更新到线上(之前我还傻傻的登录线上机子然后pull，其实只需要在本地push一下就好)。&lt;/p&gt;
+
+&lt;p&gt;参考资料：&lt;a href=&quot;http://www.ooso.net/archives/596&quot;&gt;《git权威指南》&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;-.搭建支持ssh协议的git服务器&lt;/p&gt;
+
+&lt;p&gt;1：linux服务器上安装好git(可以参考：&lt;a href=&quot;http://help.github.com/linux-set-up-git/&quot;&gt;http://help.github.com/linux-set-up-git/&lt;/a&gt;)&lt;/p&gt;
+
+&lt;p&gt;2：本地安装git软件（参考：&lt;a href=&quot;http://help.github.com&quot;&gt;http://help.github.com&lt;/a&gt; 里面的set up git）&lt;/p&gt;
+
+&lt;p&gt;3：给支持git操作的用户添加认证信息，在用户家目录（~/home）新建.ssh文件夹：将本地（就你开发机子上的~/.ssh/id_rsa.pub）添加到服务器上~/.ssh/authorized_keys &lt;a href=&quot;https://help.github.com/articles/generating-ssh-keys&quot;&gt;Generating SSH Keys&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;4：在linux服务器上创建项目的共享版本库&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;git init --bare --share;
+git update-server-info
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;5:然后你就可以使用了，操作跟你操作github一样（ git clone 添加了认证信息的用户名@服务器域名（或者ip）:/项目路径）&lt;/p&gt;
+
+&lt;p&gt;二.git部署你的项目&lt;/p&gt;
+
+&lt;p&gt;1：.在你部署的机子上通过git clone把版本库中的代码克隆一份&lt;/p&gt;
+
+&lt;p&gt;2：设置部署机上的项目git配置&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;git config receive.denyCurrentBranch ignore
+git config --bool receive.denyNonFastForwards false
+ 
+cd .git/hooks
+wget http://utsl.gen.nz/git/post-update
+chmod +x post-update
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;vim post-update&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;#!/bin/sh
+#
+# This hook does two things:
+#
+#  1. update the &quot;info&quot; files that allow the list of references to be
+#     queries over dumb transports such as http
+#
+#  2. if this repository looks like it is a non-bare repository, and
+#     the checked-out branch is pushed to, then update the working copy.
+#     This makes &quot;push&quot; function somewhat similarly to darcs and bzr.
+#
+# To enable this hook, make this file executable by &quot;chmod +x post-update&quot;.
+
+git update-server-info
+
+is_bare=$(git config --get --bool core.bare)
+
+if [ -z &quot;$is_bare&quot; ]
+then
+    # for compatibility&#39;s sake, guess
+    git_dir_full=$(cd $GIT_DIR; pwd)
+    case $git_dir_full in */.git) is_bare=false;; *) is_bare=true;; esac
+fi
+
+update_wc() {
+    ref=$1
+    echo &quot;Push to checked out branch $ref&quot; &amp;gt;&amp;amp;2
+    if [ ! -f $GIT_DIR/logs/HEAD ]
+    then
+        echo &quot;E:push to non-bare repository requires a HEAD reflog&quot; &amp;gt;&amp;amp;2
+        exit 1
+    fi
+    if (cd $GIT_WORK_TREE; git diff-files -q --exit-code &amp;gt;/dev/null)
+    then
+        wc_dirty=0
+    else
+        echo &quot;W:unstaged changes found in working copy&quot; &amp;gt;&amp;amp;2
+        wc_dirty=1
+        desc=&quot;working copy&quot;
+    fi
+    if git diff-index --cached HEAD@{1} &amp;gt;/dev/null
+    then
+        index_dirty=0
+    else
+        echo &quot;W:uncommitted, staged changes found&quot; &amp;gt;&amp;amp;2
+        index_dirty=1
+        if [ -n &quot;$desc&quot; ]
+        then
+            desc=&quot;$desc and index&quot;
+        else
+            desc=&quot;index&quot;
+        fi
+    fi
+    if [ &quot;$wc_dirty&quot; -ne 0 -o &quot;$index_dirty&quot; -ne 0 ]
+    then
+        new=$(git rev-parse HEAD)
+        echo &quot;W:stashing dirty $desc - see git-stash(1)&quot; &amp;gt;&amp;amp;2
+        ( trap &#39;echo trapped $$; git symbolic-ref HEAD &quot;&#39;&quot;$ref&quot;&#39;&quot;&#39; 2 3 13 15 ERR EXIT
+        git update-ref --no-deref HEAD HEAD@{1}
+        cd $GIT_WORK_TREE
+        git stash save &quot;dirty $desc before update to $new&quot;;
+        git symbolic-ref HEAD &quot;$ref&quot;
+        )
+    fi
+
+    # eye candy - show the WC updates :)
+    echo &quot;Updating working copy&quot; &amp;gt;&amp;amp;2
+    (cd $GIT_WORK_TREE
+    git diff-index -R --name-status HEAD &amp;gt;&amp;amp;2
+    git reset --hard HEAD)
+}
+
+if [ &quot;$is_bare&quot; = &quot;false&quot; ]
+then
+    active_branch=`git symbolic-ref HEAD`
+    export GIT_DIR=$(cd $GIT_DIR; pwd)
+    GIT_WORK_TREE=${GIT_WORK_TREE-..}
+    for ref
+    do
+        if [ &quot;$ref&quot; = &quot;$active_branch&quot; ]
+        then
+            update_wc $ref
+        fi
+    done
+fi 3:设置你本地版本库
+ 
+[remote &quot;web&quot;]
+    url = your-ssh-username@your-host:/var/www/yoursite/ 4:然后你就可以
+
+git psuh origin master（更新到版本库）
+git push web（更新到线上）
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;如果你有这个需求，同时我这篇文章误导你了（没看明白我写啥，可以email我）。&lt;/p&gt;
+
+&lt;p&gt;——————————–华丽的分界线（以下部分是之前的自己的备忘录）———————————————&lt;/p&gt;
+
+&lt;p&gt;我们知道git支持很多协议，这里想说的是本地和ssh。&lt;/p&gt;
+
+&lt;p&gt;本地就是你的代码库分别在两个盘：&lt;/p&gt;
+
+&lt;p&gt;在d盘的test目录生成不包含工作区的版本库&lt;/p&gt;
+
+&lt;p&gt;d:/test/  git init –bare&lt;/p&gt;
+
+&lt;p&gt;然后在e盘就可以用了&lt;/p&gt;
+
+&lt;p&gt;e: git clone d:/test&lt;/p&gt;
+
+&lt;p&gt;…&lt;/p&gt;
+
+&lt;p&gt;e:/test git push oringin master&lt;/p&gt;
+
+&lt;p&gt;在网络中就是通过ssh连接到你的服务器：&lt;/p&gt;
+
+&lt;p&gt;在你的服务器建立git用户：&lt;/p&gt;
+
+&lt;p&gt;$ sudo adduser git
+$ su git
+$ cd
+$ mkdir .ssh&lt;/p&gt;
+
+&lt;p&gt;然后你自己的本地的~/.ssh/id_rsa.pub添加到服务器上~/.ssh/authorized_keys&lt;/p&gt;
+
+&lt;p&gt;然后用git用户创建版本库&lt;/p&gt;
+
+&lt;p&gt;cd /var/www/gitcode/test&lt;/p&gt;
+
+&lt;p&gt;git init –bare –share&lt;/p&gt;
+
+&lt;p&gt;git update-server-info&lt;/p&gt;
+
+&lt;p&gt;然后你本地就可以使用了
+$ git clone git@youserver:/var/www/gitcode/test
+….
+$ git push origin master&lt;/p&gt;
+
+&lt;p&gt;然后你就可以尽情使用git了。&lt;/p&gt;
+
+&lt;p&gt;最后再次感谢github管理员在大过年的帮我解决问题（昨晚平安夜发的问题）。&lt;/p&gt;
+
+&lt;p&gt;还有这个http://progit.org/，你可以学习很多git知识。&lt;/p&gt;
+
+&lt;p&gt;git部署站点：&lt;/p&gt;
+
+&lt;p&gt;上面说到搭建git没有工作区间的版本库，当我们需要部署该代码时候。（比如web服务器也在git版本库管理机子上）&lt;/p&gt;
+
+&lt;p&gt;cd /var/www/test&lt;/p&gt;
+
+&lt;p&gt;git clone /var/www/gitcode/test&lt;/p&gt;
+
+&lt;p&gt;web服务器就省略了…&lt;/p&gt;
+
+&lt;p&gt;也许我们是本地开发，我们本地有个版本，修改完了git push origin master&lt;/p&gt;
+
+&lt;p&gt;然后在登陆到web服务器下面git pull，才实现代码一致，我想可能有简单办法，自己对git不熟悉，刚好看到这篇文章。http://www.ooso.net/archives/596&lt;/p&gt;
+
+&lt;p&gt;在web部署的库中：&lt;/p&gt;
+
+&lt;p&gt;git config receive.denyCurrentBranch ignore&lt;/p&gt;
+
+&lt;p&gt;git config –bool receive.denyNonFastForwards false&lt;/p&gt;
+
+&lt;p&gt;给web下面的代码加上git用户可写的权限，&lt;/p&gt;
+
+&lt;p&gt;cd .git/hooks
+wget http://utsl.gen.nz/git/post-update
+chmod +x post-update
+在本地库加上&lt;/p&gt;
+
+&lt;p&gt;[remote “webdev”]&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;    url = your-ssh-username@your-host:/var/www/yoursite/
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;然后你就可以&lt;/p&gt;
+
+&lt;p&gt;git psuh origin master&lt;/p&gt;
+
+&lt;p&gt;git push webdev&lt;/p&gt;
+
+&lt;p&gt;省去了在登陆web服务器pull的步骤。&lt;/p&gt;
+
+&lt;p&gt;这么强大的git了这是值得学习。&lt;/p&gt;
+
+&lt;p&gt;[注]：大部分的git push失败都是有权限导致的，当push失败（除冲突除外），先去检查权限问题。&lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>HOW TO FIX A GIT SSL3_GET_SERVER_CERTIFICATE ERROR</title>
+   <link href="http://xiaoshenge.github.io/skill/2012/10/01/git-SSL3_GET_SERVER_CERTIFICATE"/>
+   <updated>2012-10-01T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2012/10/01/git-SSL3_GET_SERVER_CERTIFICATE</id>
+   <content type="html">&lt;p&gt;git clone https://github.com/xurenlu/acfilter.git&lt;/p&gt;
+
+&lt;p&gt;Cloning into ‘acfilter’…&lt;/p&gt;
+
+&lt;p&gt;error: SSL certificate problem, verify that the CA cert is OK. Details:&lt;/p&gt;
+
+&lt;p&gt;error:14090086:SSL routines:SSL3_GET_SERVER_CERTIFICATE:certificate verify failed while accessing https://github.com/xurenlu/acfilter.git/info/refs&lt;/p&gt;
+
+&lt;p&gt;fatal: HTTP request failed&lt;/p&gt;
+
+&lt;p&gt;a workaround is to tell git to avoid checking SSL certificates:&lt;/p&gt;
+
+&lt;p&gt;export GIT_SSL_NO_VERIFY=true&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.uwosh.edu/ploneprojects/docs/how-tos/how-to-fix-a-git-ssl3-get-server-certificate-error&quot;&gt;reference&lt;/a&gt;&lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>redis</title>
+   <link href="http://xiaoshenge.github.io/skill/2012/09/21/redis"/>
+   <updated>2012-09-21T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2012/09/21/redis</id>
+   <content type="html">&lt;h3 id=&quot;master-slave&quot;&gt;master-slave&lt;/h3&gt;
+&lt;p&gt;&lt;em&gt;in one mechine you can test by change dbfile,port.&lt;/em&gt; slave configuration file: slaveof master-ip master-port
+[]()&lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>常用linux设置</title>
+   <link href="http://xiaoshenge.github.io/skill/2012/09/17/linux-setting"/>
+   <updated>2012-09-17T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2012/09/17/linux-setting</id>
+   <content type="html">&lt;h4 id=&quot;linux&quot;&gt;linux密码&lt;/h4&gt;
+&lt;p&gt;passwd：修改密码
+####设置语系####
+centos：echo -e “LANG=’zh_CN.UTF-8’\nSYSFONT=’latarcyrheb-sun16’” &amp;gt; /etc/sysconfig/i18n
+####修改环境变量####
+/etc/profile里面添加 export PATH=”$PATH:/usr/local/git/bin:/usr/local/php/bin”
+####linux挂载samba####
+mount -t cifs //hostname/Public /var/www/html/1/NAS -o username=xxxx,password=xxxx
+[]()&lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>jquery plugins</title>
+   <link href="http://xiaoshenge.github.io/skill/2012/09/15/jquery-plugin"/>
+   <updated>2012-09-15T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2012/09/15/jquery-plugin</id>
+   <content type="html">&lt;p&gt;1.jQuery UI sortable not working in doms with table. 在选择的时候加上tbody, $(‘#sorttableid tbody’).sortable();
+[]()&lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>discuz问题小结</title>
+   <link href="http://xiaoshenge.github.io/skill/2012/09/15/discuz"/>
+   <updated>2012-09-15T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2012/09/15/discuz</id>
+   <content type="html">&lt;p&gt;discuz!x2搭建好了发现管理后台登陆不进去：修改/config/config_global.php中的$_config[‘admincp’][‘checkip’]=0&lt;/p&gt;
+
+&lt;p&gt;[]()&lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>PHP Interactive shell</title>
+   <link href="http://xiaoshenge.github.io/skill/2012/09/03/php-Interactive-shell"/>
+   <updated>2012-09-03T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2012/09/03/php-Interactive-shell</id>
+   <content type="html">&lt;p&gt;无意中发现在cli模式下php -a可以进入交互脚本，从此成了我调试php的小工具（不必为了调试而写一个文件）。&lt;/p&gt;
+
+&lt;p&gt;然而在自己编译安装PHP后发现输入php -a是Interactive mode enabled，没有之前那么方便了，于是对于有强迫症的人要折腾成以前那样。网上搜了一圈没有发现解决方案。&lt;/p&gt;
+
+&lt;p&gt;文档中发现了As of PHP 5.1.0, the CLI SAPI provides an interactive shell using the -a option if PHP is compiled with the –with-readline option.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.php.net/manual/en/features.commandline.interactive.php&quot;&gt;php interactive shell&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;./configure –prefix=/usr/local/php –enable-fpm –with-curl –with-gd –with-mysql –with-mysqli –with-readline&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>BOM另类利用</title>
+   <link href="http://xiaoshenge.github.io/skill/2012/09/03/file-bom"/>
+   <updated>2012-09-03T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2012/09/03/file-bom</id>
+   <content type="html">&lt;p&gt;之前对BOM没有客观的认识，只是听说写PHP保存的时候要保存为不带BOM的文件。&lt;/p&gt;
+
+&lt;p&gt;还有之前在导出csv格式的文件默认是UTF-8编码的带有中文的话，用excel打开就是乱码。就导致每次导出的时候需要转码为gbk的，今天看到一种方法加上bom，excel打开utf-8正常。&lt;/p&gt;
+
+&lt;p&gt;为 了识别 Unicode 文件，Microsoft 建议所有的 Unicode 文件应该以 ZERO WIDTH NOBREAK SPACE字符开头。这作为一个”特征符”或”字节顺序标记（byte-order mark，BOM）”来识别文件中使用的编码和字节顺序（big-endian或little-endian），具体的对应关系见下表。&lt;/p&gt;
+
+&lt;p&gt;Bytes Encoding Form
+00 00 FE FF	 UTF-32, big-endian
+FF FE 00 00	 UTF-32, little-endian
+FE FF	 UTF-16, big-endian
+FF FE	 UTF-16, little-endian
+EF BB BF	 UTF-8&lt;/p&gt;
+
+&lt;p&gt;类Unix系统中并没有使用 BOM，因为它会破坏现有的 ASCII 文件的语法约定。&lt;/p&gt;
+
+&lt;p&gt;在导出的内容前面加上 “\xEF\xBB\xBF”.$str&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://hi.baidu.com/aullik5/item/56d2be1b81939813e3f986f7&quot;&gt;关于bom.php&lt;/a&gt;&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>ci中图片处理问题</title>
+   <link href="http://xiaoshenge.github.io/skill/2012/09/01/ci-img"/>
+   <updated>2012-09-01T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2012/09/01/ci-img</id>
+   <content type="html">&lt;p&gt;在循环生成压缩图片的时候出现了，第一张会生成缩略图，其他的都是报错： Your server does not support the GD function required to process this type of image.&lt;/p&gt;
+
+&lt;p&gt;一开始写法：
+$this-&amp;gt;load-&amp;gt;library(‘image_lib’,$config); 
+$this-&amp;gt;image_lib-&amp;gt;resize();
+改为：
+$this-&amp;gt;load-&amp;gt;library(‘image_lib’); 
+$this-&amp;gt;image_lib-&amp;gt;initialize($config);
+$this-&amp;gt;image_lib-&amp;gt;resize();&lt;/p&gt;
+
+&lt;p&gt;要继承ci自身的library，需要在config/autoload.php里面将这个继承的libray加入。&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>mysqldump出现的小问题</title>
+   <link href="http://xiaoshenge.github.io/skill/2012/08/01/mysqldump-problem"/>
+   <updated>2012-08-01T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2012/08/01/mysqldump-problem</id>
+   <content type="html">&lt;p&gt;mysqldump的sql文件在导入的时候出现： unkonwn commond “\n”, unkonwn commond ‘‘,一开始以为是linux和windown的换行符导致的（导出是在linux，导入是在window下）&lt;/p&gt;
+
+&lt;p&gt;还是搜索给力，关键词“MySQL导入时出现unknown command的解决方案”，导入的时候加上–default-character-set=utf8&lt;/p&gt;
+
+&lt;p&gt;这与mysql的配置有关：可以通过 show variables like ‘char%’&lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>端正态度</title>
+   <link href="http://xiaoshenge.github.io/life/2012/07/13/do-better-for-youserlf"/>
+   <updated>2012-07-13T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/life/2012/07/13/do-better-for-youserlf</id>
+   <content type="html">&lt;p&gt;一直默认公司的测试就是走流程，私下我们也理解他们因为公司的重点在客户端不是我们web端。但是今天，一个测试组的
+同学改变了我的想法。&lt;/p&gt;
+
+&lt;p&gt;我向往常一样，在一个烂尾楼上加了一些功能，自己随便测试了一下就交付给了测试组的同学。这个同学认认真真的测试了
+一遍，发现几个由于我粗心导致的bug。于是我赶紧改了，然后他又仔细的测试一遍没有发现什么大问题，我想流程应该快
+走完了，因为产品那边在催发布。过了一会，测试同学打电话过来了，跟我确认了一个非常规流程的bug（其实自己想当然
+编程导致的，以为程序按自己的步骤执行），由于这个确实不好解决就和产品那边沟通，暂时忽略这种情况，然后测试同学
+才同意。我以为这就完了，但是过了一会测试同学又说需要我们把这个忽略点重新加到需求备注里面，才把测试流程走完。&lt;/p&gt;
+
+&lt;p&gt;我是有点不适应，因为以前测试那边几乎没测试一样。然后我在oc上看了一下那个同学的title高级测试，然后自看看了看
+以前测试那个同学的title初级测试。我一想我的title也是初级，但是想想我处理问题跟这位同学差的太多了，首先人家
+认真（不是把自己的任务没当一回事），第二人家非常专业的考虑到了程序中的逻辑bug和功能欠缺的部分。&lt;/p&gt;
+
+&lt;p&gt;title也许没那么重要，重要的是你对待自己的态度，是用高层次要求自己还是得过且过。&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>ngix</title>
+   <link href="http://xiaoshenge.github.io/skill/2012/07/07/nginx"/>
+   <updated>2012-07-07T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2012/07/07/nginx</id>
+   <content type="html">&lt;h2 id=&quot;section&quot;&gt;安装笔记&lt;/h2&gt;
+&lt;p&gt;1：php-fpm(5.4.4)&lt;/p&gt;
+
+&lt;p&gt;./configure –prefix=/usr/local/php5.4.4 –with-mysql –with-mysqli –enable-fpm –with-jpeg-dir –with-png-dir –with-zlib –with-libxml-dir –enable-xml –disable-debug  –enable-mbstring &amp;amp;&amp;amp; make &amp;amp;&amp;amp; make install&lt;/p&gt;
+
+&lt;p&gt;[source] cp php.ini-production /usr/local/php5.4.4/lib/php.ini&lt;/p&gt;
+
+&lt;p&gt;[target] cp etc/php-fpm.default etc/php-fpm; user=www-data,group=www-data&lt;/p&gt;
+
+&lt;p&gt;[target] ./sbin/php-fpm&lt;/p&gt;
+
+&lt;p&gt;2: nginx(1.3.2):&lt;/p&gt;
+
+&lt;p&gt;./configure –prefix=/usr/local/nginx1.3.2 –user=www-data –group=www-data –with-http_stub_status_module –without-http_rewrite_module –with-http_ssl_module –with-pcre &amp;amp;&amp;amp; make &amp;amp;&amp;amp; make install&lt;/p&gt;
+
+&lt;p&gt;[target] conf/nginx.conf [include fasctcgi_params]=&amp;gt;[include fastcgi.conf]&lt;/p&gt;
+
+&lt;p&gt;如果没有改nginx的配置，导致解析php文件一直返回： file not found。&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>安全编码</title>
+   <link href="http://xiaoshenge.github.io/skill/2012/07/05/developer-security"/>
+   <updated>2012-07-05T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2012/07/05/developer-security</id>
+   <content type="html">&lt;p&gt;&lt;a href=&quot;http://php.robm.me.uk/&quot;&gt;PHP Security Guide&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://hi.baidu.com/monyer/item/8d6dcab41c440b9618469775&quot;&gt;Ajax hacking with XSS&lt;/a&gt;&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>开发人员应该测试自己的代码</title>
+   <link href="http://xiaoshenge.github.io/skill/2012/06/27/developer-testing"/>
+   <updated>2012-06-27T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2012/06/27/developer-testing</id>
+   <content type="html">&lt;p&gt;由于在上一家外包公司有专职QA，导致我写程序只是简单的做了“干净测试”，从来没有对自己的代码做过系统的测试。于是，
+在这家没有QA的公司，我负责一个抽奖小活动，抱着用后弃之的态度，写完后没有仔细测试，导致放到线上出现了问题（
+奖品总数限制漏洞，后台配置有临界值导致的死循环）。&lt;/p&gt;
+
+&lt;p&gt;之前有专职QA的时候，他们也只是测试需求中的功能是否完成，设计中的关注点是否完成，其实这应该是我们开发人员的事情。&lt;/p&gt;
+
+&lt;p&gt;作为一个梦想成为靠谱程序员的我，不能只coding，要测试，要对自己的代码质量负责，没人给你擦PP。&lt;/p&gt;
+
+&lt;p&gt;扩展阅读：&lt;a href=&quot;http://coolshell.cn/articles/6994.html&quot;&gt;我们需要专职的QA吗？&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;摘录：开发人员应该测试自己的代码。没什么可说的。背后的道理并不重要。这包括单元测试，全覆盖的自动化测试或手工测试或组合测试。如果你的开发人员不能/不愿意或认为这“不归我管”，那你需要更好的程序员。&lt;/p&gt;
+
+&lt;h2 id=&quot;bug&quot;&gt;我出现过的bug&lt;/h2&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;while循环没有测试条件判断导致的死循环。&lt;/li&gt;
+&lt;/ol&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>html doctype</title>
+   <link href="http://xiaoshenge.github.io/skill/2012/06/09/html-doctype"/>
+   <updated>2012-06-09T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2012/06/09/html-doctype</id>
+   <content type="html">&lt;p&gt;之前有遇到没有写doctype发现写的样式在浏览器下面表示不同，今天看到有同学写的blog提到的&amp;lt;!DOCTYPE html&amp;gt;简写模式，一起注意过豆瓣的没有仔细研究，以后用简写模式吧。&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://hi.baidu.com/cuttinger/blog/item/3173c89525c9b46ad1135e88.html&quot;&gt;有关Doctype&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.cnblogs.com/GrayZhang/archive/2011/03/31/learning-html5-doctype.html&quot;&gt;HTML5标准学习 – DOCTYPE&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;1）在任何html文档中，文档的首部都增加doctype声明，否则，因为浏览器的不同，样式的行为是很难预期的；&lt;/p&gt;
+
+&lt;p&gt;2）建议使用标准模式的doctype声明， &lt;/p&gt;
+
+&lt;p&gt;&amp;lt;!DOCTYPE html PUBLIC “-//W3C//DTD XHTML 1.0 Transitional//EN” “http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd”&amp;gt;&lt;/p&gt;
+
+&lt;p&gt;或者&lt;/p&gt;
+
+&lt;p&gt;&amp;lt;!DOCTYPE html&amp;gt;&lt;/p&gt;
+
+&lt;p&gt;后者是前者的简写形式。&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>CentOS5 yum error</title>
+   <link href="http://xiaoshenge.github.io/skill/2012/06/08/centos5-yum-error"/>
+   <updated>2012-06-08T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2012/06/08/centos5-yum-error</id>
+   <content type="html">&lt;p&gt;在CentOS下要使用yum，发现报错：There was a problem importing one of the Python modules required to run yum.&lt;/p&gt;
+
+&lt;p&gt;错误原因：错误信息描述为 yum 所依赖的python 不相符，请安装相对应的python即可。&lt;/p&gt;
+
+&lt;p&gt;查看python版本：whereis python，执行python：查看使用的python版本，发现两处的版本不一致，而yum调用了高版本的python而环境变量时低版本的python&lt;/p&gt;
+
+&lt;p&gt;将/usr/bin/yum中的python改为低版本的：#!/usr/bin/python ===》 #!/usr/bin/python2.4&lt;/p&gt;
+
+&lt;p&gt;然后yum可以运行了，接着安装软件的时候，yum找不到版本库。&lt;/p&gt;
+
+&lt;p&gt;将/etc/yum.repos.d/CentOS-Base.repo里面的内容注释掉（因为出错的版本库在这里），然后执行yum update。&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>linux下ext3格式恢复误删文件</title>
+   <link href="http://xiaoshenge.github.io/skill/2012/06/02/linux-ext3-file-restore"/>
+   <updated>2012-06-02T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2012/06/02/linux-ext3-file-restore</id>
+   <content type="html">&lt;p&gt;这次不是我的删掉的文件，但是我却搞丢了innode（别人让我帮忙看一下，结果我在那个目录下面写文件了），导致文件恢复不了。&lt;/p&gt;
+
+&lt;p&gt;参考：http://blog.s135.com/linux_ext3_undelete/&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;  http://easwy.com/blog/archives/undelete-directories-files-on-ext3-filesystem-via-ext3grep/
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;1.安装ext3grep软件
+2.umount 分区（df）
+3.查询所有Inode（ ext3grep /dev/sdb1 –ls –inode 2），（通过逐级查找Inode我们可以看到文件操作历史）
+4.ext3grep /dev/your-device –restore-file path/to/your/file/filename 恢复文件&lt;/p&gt;
+
+&lt;p&gt;如果innode丢失了，就恢复不了（比如对那个目录在删除文件后执行了写操作）&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>通过mysql的binlog恢复误删数据库</title>
+   <link href="http://xiaoshenge.github.io/skill/2012/05/26/mysql-binlog-recover"/>
+   <updated>2012-05-26T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2012/05/26/mysql-binlog-recover</id>
+   <content type="html">&lt;p&gt;我承认周六来赶项目有点不爽（领导是给新人锻炼的机会，我信了…），但是误删数据库确实是我不小心的。&lt;/p&gt;
+
+&lt;p&gt;由于测试服务器上的mysql数据库没有备份，查了资料还原数据库需要binlog,万幸的是测试机上的binlog是开启的[show variables like ‘log_bin’; show binary logs;].&lt;/p&gt;
+
+&lt;p&gt;通过mysqlbinlog [mysql-bin.0001],我们可以看到数据的操作,通过此命令导出sql【mysqlbinlog –no-defaults –database=”dbname” –stop-datetime=”2012-05-26 00:00:00”  /usr/local/mysql/var/mysql-bin.000008 &amp;gt; /home/mysql-restore20120526081.sql】。&lt;/p&gt;
+
+&lt;p&gt;然后把导出的sql恢复到数据库。&lt;/p&gt;
+
+&lt;p&gt;好吧，保持好心情，去吃个饭回来继续赶项目。&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>PHP后期静态绑定</title>
+   <link href="http://xiaoshenge.github.io/skill/2012/05/18/php-class-static"/>
+   <updated>2012-05-18T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2012/05/18/php-class-static</id>
+   <content type="html">&lt;p&gt;从PHP 5.3.0开始，PHP增加了一个叫做后期静态绑定的功能，用于在继承范围内引用静态调用的类。 
+该功能从语言内部角度考虑被命名为”后期静态绑定“。”后期绑定“的意思是说，static::不再被解析为定义当前方法所在的类，而是在实际运行时计算的。也可以称之为”静态绑定“，因为它可以用于（但不限于）静态方法的调用。 &lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>JavaScript语言精粹与编程实践-笔记</title>
+   <link href="http://xiaoshenge.github.io/javascript/2012/04/28/javascript-note"/>
+   <updated>2012-04-28T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/javascript/2012/04/28/javascript-note</id>
+   <content type="html">&lt;h4 id=&quot;section&quot;&gt;逻辑运算&lt;/h4&gt;
+&lt;p&gt;运算符||与&amp;amp;&amp;amp;既不改变运算元的数据类型，也不会强制运算结果的数据类型。运算符会将运算元理解为布尔值，以进行布尔运算。运算过程支持布尔短路。因此我们
+经常看到为了兼容性的写法 var a = b || c, 简化语句if(b) {c =x;}为 c = b &amp;amp;&amp;amp; x,这都是利用逻辑运算的不强制类型运算结果的数据类型和布尔短路。
+####函数调用语句
+//示例1：具名函数的调用
+function foo() {
+}
+foo();
+//示例2：匿名函数通过引用调用
+fooRef = function() {
+}
+fooRef();
+//示例3：没有引用的匿名函数调用方法（1）
+(function(){
+//….
+}());
+//示例4：没有引用的匿名函数调用方法（2）
+(function(){
+//…
+})();
+//示例5：没有引用的匿名函数调用方法（3）
+void function() {
+//…
+}();&lt;/p&gt;
+
+&lt;h4 id=&quot;section-1&quot;&gt;存取对象成员（属性，方法）&lt;/h4&gt;
+&lt;p&gt;”.”和”[]”都是对象成员存取运算符，所不同的是：前者右边的运算元必须是一个标识符，后者中间的运算元可以是变量、直接量或表达式。由于”.”号要求运算元是标识符，因此
+对一些不满足标识符命名规则的属性，就可以使用”[]”号。例如 ：
+var obj = {
+	‘a.b’: 1234,
+	‘1’:456,
+	‘.’:89
+}
+obj中的”a.b”,”1”,”.”这些属性名，这种情况下就只能用”[]”运算符。&lt;/p&gt;
+
+&lt;h4 id=&quot;section-2&quot;&gt;构造器创建对象实例&lt;/h4&gt;
+&lt;p&gt;new constructor[(arguments)]
+语法中，当参数为空时与没有参数表是一致的，因此下面两行代码是等义的：
+obj = new constructor;
+obj = new constructor();
+但是，我们不能认为constructor后面的括号是函数调用的括号。&lt;/p&gt;
+
+&lt;h4 id=&quot;section-3&quot;&gt;对象直接量声明&lt;/h4&gt;
+&lt;p&gt;obj = { propertyName: expression[,…]}
+这里的名字（propertyName）可以用字符串来表示，也可以只是一个标识符。空字符串、点号、数字也可以作为属性名。&lt;/p&gt;
+
+&lt;h4 id=&quot;section-4&quot;&gt;正则表达式直接量声明&lt;/h4&gt;
+&lt;p&gt;//有正则表达式直接量如下
+rx = /abcd\n\r/gi;
+//使用字符串创建的正则表达式对象
+rx = new RegExp(‘abcd\n\r’,’gi’);
+如果你认为这两个正则应该是一样的，那你就忽略了一个问题：在字符串中”&quot;也是转义符，因此用’abcd\n\r’来创建正则表达式对象时既非语法错误，也不导致运行错-它只是与开发人员的预期不一致而已。
+解决该问题的方法是字符串中的”&quot;增加转义，因此上例应该被修改为：
+rx = new RegExp(‘abcd\n\r’,’gi’);&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>使用vim作为php编码工具</title>
+   <link href="http://xiaoshenge.github.io/php/2012/04/24/use-vim-php-coding"/>
+   <updated>2012-04-24T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/php/2012/04/24/use-vim-php-coding</id>
+   <content type="html">&lt;h4 id=&quot;vimvimrc&quot;&gt;vim配置（.vimrc）&lt;/h4&gt;
+
+&lt;pre&gt;&lt;code&gt;set nu #显示行数
+
+set colorscheme desert #配色方案：desert（你可以选择你喜欢的方案）
+
+set sw=4 #自动缩进的时候， 缩进尺寸为 4 个空格。
+
+set ts=4 #Tab 宽度为 4 个字符。
+
+set et #编辑时将所有 Tab 替换为空格
+
+set fileencoding=utf-8 #字符编码
+
+set nobackup #没有备份
+
+set nobomb #BOM是“Byte Order Mark”的缩写，用于标记文件的编码。并不是所有的文本编辑工具都能识别BOM标记
+
+set tags=~/.vim/tags/phptags,~/.vim/tags/cimvc #ctags用于函数间跳转，使用 Ctrl+] 就可以自动跳转至定义，Ctrl+t 可以返回上一次查看位置。
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&quot;tags&quot;&gt;生成项目tags：&lt;/h4&gt;
+&lt;p&gt;1.安装exuberant-ctags&lt;/p&gt;
+
+&lt;p&gt;2.执行脚本(http://mwop.net/blog/134-exuberant-ctags-with-PHP-in-Vim.html)&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;!/bin/bash
+
+cd /path/to/framework/library
+
+exec ctags-exuberant -f ~/.vim/mytags/framework \
+
+-h \&quot;.php\&quot; -R \
+
+--exclude=\&quot;\.svn\&quot; \
+
+--totals=yes \
+
+--tag-relative=yes \
+
+--PHP-kinds=+cf \
+
+--regex-PHP=&#39;/abstract class ([^ ]*)/\1/c/&#39; \
+
+--regex-PHP=&#39;/interface ([^ ]*)/\1/c/&#39; \
+
+--regex-PHP=&#39;/(public |static |abstract |protected |private )+function ([^ (]*)/\2/f/&#39;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;httpwwwoosonetarchives197&quot;&gt;&lt;a href=&quot;http://www.ooso.net/archives/197&quot;&gt;语法检查&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;php的语法检查功能：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;map &amp;lt;F5&amp;gt; :!/usr/bin/php -l %&amp;lt;CR&amp;gt; f5帮助你检查php的语法错误
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;vim的语法美化功能也很方便,只要在程序的第一行,command模式下输入=:1,$,就可以把当前代码排列的井然有序.&lt;/p&gt;
+
+&lt;h2 id=&quot;taglist-winmanager&quot;&gt;TagList WinManager&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;&quot;add TagList
+let Tlist_Show_One_File=1
+let Tlist_OnlyWindow=1
+let Tlist_Use_Right_Window=0
+let Tlist_Sort_Type=&#39;name&#39;
+let Tlist_Exit_OnlyWindow=1
+let Tlist_Show_Menu=1
+let Tlist_Max_Submenu_Items=10
+let Tlist_Max_Tag_length=20
+let Tlist_Use_SingleClick=0
+let Tlist_Auto_Open=0
+let Tlist_Close_On_Select=0
+let Tlist_File_Fold_Auto_Close=1
+let Tlist_GainFocus_On_ToggleOpen=0
+let Tlist_Process_File_Always=1
+let Tlist_WinHeight=10
+let Tlist_WinWidth=18
+let Tlist_Use_Horiz_Window=0
+filetype plugin on
+let g:winManagerWindowLayout=&#39;FileExplorer|TagList&#39;
+nmap wm :WMToggle&amp;lt;cr&amp;gt; ##迁移到mac下报错
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Taglist: Failed to generate tags for /my/path/to/file
+ctags: illegal option – -^@usage: ctags [-BFadtuwvx] [-f tagsfile] file …&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;在talglist的&lt;a href=&quot;http://vim-taglist.sourceforge.net/faq.html&quot;&gt;faq&lt;/a&gt;上找到了答案,原来taglist只支持exuberant ctags tool,不支持GNU　ctags或UNIX ctags,mac下自带的不是exuberant　ctags,所以就会有问题了,解决办法也很简单,下载&lt;a href=&quot;http://ctags.sourceforge.net/&quot;&gt;exuberant ctags tool&lt;/a&gt;,然后装在一个与系统自带的ctags不冲突的路径下,然后在.vimrc里加一行let Tlist_Ctags_Cmd = ‘/path/to/ctags’就可以了.&lt;/p&gt;
+
+&lt;h2 id=&quot;section&quot;&gt;自动补全&lt;/h2&gt;
+&lt;p&gt;1.下载词典&lt;a href=&quot;http://svn.php.net/viewvc/phpdoc/doc-base/trunk/funclist.txt&quot;&gt;http://svn.php.net/viewvc/phpdoc/doc-base/trunk/funclist.txt&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;2.设置vimrc&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;”只有在是PHP文件时，才启用PHP补全(ctrl+p)
+au FileType php call AddPHPFuncList()
+function AddPHPFuncList()
+	set dictionary-=~/.vim/php_funclist.txt dictionary+=~/.vim/php_funclist.txt
+	set complete-=k complete+=k
+endfunction
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;section-1&quot;&gt;备注：&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&quot;http://www.vim.org/scripts/script.php?script_id=2874&quot;&gt;php syntax&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.laruence.com/2010/08/18/1718.html&quot;&gt;将PHP Manual融入(g)Vim&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.slideshare.net/ZendCon/vim-for-php-programmers-presentation&quot;&gt;VIM for (PHP) Programmers&lt;/a&gt;
+&lt;a href=&quot;http://randomclan.blog.163.com/blog/static/1453009820121015111325147/&quot;&gt;php自动补全&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://coolshell.cn/articles/5426.html&quot;&gt;简明 Vim 练级攻略&lt;/a&gt;&lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>jquery.1.4.2的live在IE8下的一个bug</title>
+   <link href="http://xiaoshenge.github.io/javascript/2012/04/24/ie8-jquery-live"/>
+   <updated>2012-04-24T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/javascript/2012/04/24/ie8-jquery-live</id>
+   <content type="html">&lt;p&gt;在IE8下，如果给页面有内容是动态加载的，通过live绑定事件，在页面上面的内容要后绑定（如果发现有功能不能工作，就按动态加载后的DOM，顶部的DOM后绑定live事件），不过这个bug在更高版本的jquery下修复了。&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>《如何阅读一本书》</title>
+   <link href="http://xiaoshenge.github.io/notes/2012/04/22/how-to-read-a-book"/>
+   <updated>2012-04-22T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/notes/2012/04/22/how-to-read-a-book</id>
+   <content type="html">&lt;h3 id=&quot;section&quot;&gt;检视阅读&lt;/h3&gt;
+
+&lt;h4 id=&quot;section-1&quot;&gt;有系统的略读或粗读&lt;/h4&gt;
+&lt;p&gt;1.先看书名页，然后如果有序就先看序&lt;/p&gt;
+
+&lt;p&gt;2.研究目录页&lt;/p&gt;
+
+&lt;p&gt;3.如果书中附有索引，也要检阅一下&lt;/p&gt;
+
+&lt;p&gt;4.读一下出版者的介绍&lt;/p&gt;
+
+&lt;p&gt;5.开始挑几个看来跟主题息息相关的篇章来看&lt;/p&gt;
+
+&lt;p&gt;6.最后一步，把书打开来，东翻翻西翻翻，念个一两段，有时候连续读几页，但不要太多。&lt;/p&gt;
+
+&lt;h4 id=&quot;section-2&quot;&gt;粗浅的阅读：&lt;/h4&gt;
+&lt;p&gt;头一次面对一本难读的书的时候，从头到尾先读完一遍，碰到不懂的地方不要停下来查询和思索。&lt;/p&gt;
+
+&lt;h3 id=&quot;section-3&quot;&gt;主动的阅读&lt;/h3&gt;
+&lt;p&gt;####基础：一个阅读者要提出的四个基本问题
+1.整体来说，这本书到底在谈些什么？&lt;/p&gt;
+
+&lt;p&gt;2.作者细部说了什么，怎么说的?&lt;/p&gt;
+
+&lt;p&gt;3.这本书说得有道理吗？是全部有道理，还是部分有道理？&lt;/p&gt;
+
+&lt;p&gt;4.这本书跟你有什么关系？&lt;/p&gt;
+
+&lt;p&gt;人们在阅读一本好书的时候会打瞌睡，并不是他们不想努力，而是因为他们不知道要如何努力。你挂念着想读的好书太多了。（如果不是挂念着，也算不上是你觉得的好书。）
+而除非你真正起身接触到它们，把自己提升到同样的层次，否则你所挂念的这些好书只会使你厌倦而已。并不是你起身的本身在是你疲倦，而是因为你欠缺有效应用自我提升的
+技巧，在挫折中产生的沮丧，因而才感到厌倦。要保持主动的阅读，你不只是要有意愿这么做而已，还要有技巧-能战胜最初觉得自己能力不足部分，进而自我提升的艺术。&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>利用diff，patch制作补丁文件</title>
+   <link href="http://xiaoshenge.github.io/skill/2012/04/22/diff-patch"/>
+   <updated>2012-04-22T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2012/04/22/diff-patch</id>
+   <content type="html">&lt;h4 id=&quot;section&quot;&gt;单个文件&lt;/h4&gt;
+&lt;p&gt;diff -u file1 file2 &amp;gt; f1f2.patch&lt;/p&gt;
+
+&lt;p&gt;将补丁应用于file1: patch file1 &amp;lt; f1f2.patch&lt;/p&gt;
+
+&lt;p&gt;恢复file1之前版本：patch file1 -R &amp;lt; f1f2.patch&lt;/p&gt;
+
+&lt;h4 id=&quot;patchdiff-u-&quot;&gt;patch文件格式（diff中-u使得差异输出中带有上下文 ）：&lt;/h4&gt;
+&lt;p&gt;diff -u a1/a1.1 a2/a1.1（差异比较的命令）&lt;/p&gt;
+
+&lt;p&gt;— a1/a1.1	2012-04-22 23:32:19.000000000 +0800（-代表文件）&lt;/p&gt;
+
+&lt;p&gt;+++ a2/a1.1	2012-04-22 22:48:53.000000000 +0800（+代表副本）&lt;/p&gt;
+
+&lt;p&gt;@@ -1 +1,2 @@（@差异标识符，-1 +1,2表示文件的第1行到第2行，副本的第1行到第2行）&lt;/p&gt;
+
+&lt;p&gt;this a1.1（没有差异地方）&lt;/p&gt;
+
+&lt;p&gt;+add in a2（副本中有的）&lt;/p&gt;
+
+&lt;h4 id=&quot;section-1&quot;&gt;目录（多个文件）&lt;/h4&gt;
+&lt;p&gt;diff -ur dir1 dir2 &amp;gt; d1d2.patch&lt;/p&gt;
+
+&lt;p&gt;将补丁应用于dir1：patch -p0 &amp;lt; d1d2.patch&lt;/p&gt;
+
+&lt;p&gt;恢复dir1之前的版本： patch -R dir1 &amp;lt; d1d2.patch&lt;/p&gt;
+
+&lt;p&gt;patch -p数字：跟d1d2.patch 里面的文件名有关（就patch文件第一行）0代表于要更新的文件在同一目录下：
+例如diff -uNr a1/a1.1 a2/a1.1 p0就是要打补丁的文件是a1/a1.1，p1代表要更新的文件时a1.1（即p代表目录层次）&lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>谁动了我的内存：php内存泄露，系统缓存消耗？</title>
+   <link href="http://xiaoshenge.github.io/skill/2012/04/19/php-memory"/>
+   <updated>2012-04-19T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/skill/2012/04/19/php-memory</id>
+   <content type="html">&lt;h5 id=&quot;g&quot;&gt;情景：线上图片服务压缩的图片品质（100），缩略图品质（100）占用了很多空间，导致后来又55个文件了（占用空间160G）才发现这个问题。现在需要解决的是把这部分压缩个低品质的缩略图节省空间&lt;/h5&gt;
+&lt;p&gt;（当然在这个硬盘白菜价的时代搞这样的问题没这个必要，我这里讨论的不是节省空间是想找出内存消耗问题）。我用php脚本重新生成缩略图的时候，通过top发现内存消耗一直增加导致后来脚本报错内存不够了，到底谁动了我的内存？&lt;/p&gt;
+
+&lt;p&gt;处理代码版本一(php)：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;set_time_limit(0);
+
+function thumbnailimage($img,$width,$height,$savefile){
+
+	$new_img = imagecreatetruecolor ( $width, $height );
+	imagedestroy($new_img);
+	
+}
+foreache($list as $v) {
+
+	$img = imagecreatefromjpeg($v);
+	thumbnailimage($img,480,300,$savepath);
+	imagedestroy($img);
+	
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这个脚本处理了5千多个的时候，由于内存不够用挂了，然后我改了php.ini里面的memory_limit改成了5G，但是随着脚本的执行，内存也会被消耗殆尽。
+于是我就以为是php的内存泄露了，然后就想用其他方案解决，在老王的技术手册里面看到GraphicsMagick这个工具，然后写了个脚本去处理，结果发现top看到的内存消耗还是一直增加，然后经人提示这个应该是系统操作文件（写文件）文件被缓存了消耗了内存，
+调整bash脚本，处理一张图片后手动释放一下内存（sync &amp;amp;&amp;amp; echo 3 &amp;gt; /proc/sys/vm/drop_caches），然后top看到的内存消耗就正常了。
+由于这个bash脚本处理的速度还不如php的gd库处理，然后就换成php处理。
+验证php脚本内存消耗的原因：
+处理代码版本二（php）：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;set_time_limit(0);
+
+function thumbnailimage ($img,$width,$height,$savefile) {
+
+	$new_img = imagecreatetruecolor ( $width, $height );
+	imagedestroy($new_img);
+	
+}
+foreache($list as $v) {
+
+	$memory1=memory_get_usage();
+	file_put_contents(&#39;memory&#39;,&#39;memory1:&#39;.$memory1.&quot;\n&quot;,FILE_APPEND);
+	
+	$img = imagecreatefromjpeg($v);
+	thumbnailimage($img,480,300,$savepath);
+	imagedestroy($img);
+	
+	$memory1=memory_get_usage();
+	file_put_contents(&#39;memory&#39;,&#39;memory1:&#39;.$memory1.&quot;\n&quot;,FILE_APPEND);
+	
+	system(&#39;sync &amp;amp;&amp;amp; echo 3 &amp;gt; /proc/sys/vm/drop_caches&#39;);
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;通这个版本处理内存消耗就正常了，当然php进程也要消耗内存，php.ini的memory_limit稍微改大一下。
+从这里看来消耗内存的是系统操作文件消耗的，不是php，由于我的无知一开始错怪了PHP。
+###出现问题没有仔细分析，只是用道听途说的php内存泄露来解释（简单的测试一下就知道不是PHP内存泄露的问题）。&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Jekyll Introduction</title>
+   <link href="http://xiaoshenge.github.io/lessons/2011/12/29/jekyll-introduction"/>
+   <updated>2011-12-29T00:00:00+08:00</updated>
+   <id>http://xiaoshenge.github.io/lessons/2011/12/29/jekyll-introduction</id>
+   <content type="html">
+&lt;p&gt;This Jekyll introduction will outline specifically  what Jekyll is and why you would want to use it.
+Directly following the intro we’ll learn exactly &lt;em&gt;how&lt;/em&gt; Jekyll does what it does.&lt;/p&gt;
+
+&lt;h2 id=&quot;overview&quot;&gt;Overview&lt;/h2&gt;
+
+&lt;h3 id=&quot;what-is-jekyll&quot;&gt;What is Jekyll?&lt;/h3&gt;
+
+&lt;p&gt;Jekyll is a parsing engine bundled as a ruby gem used to build static websites from
+dynamic components such as templates, partials, liquid code, markdown, etc. Jekyll is known as “a simple, blog aware, static site generator”.&lt;/p&gt;
+
+&lt;h3 id=&quot;examples&quot;&gt;Examples&lt;/h3&gt;
+
+&lt;p&gt;This website is created with Jekyll. &lt;a href=&quot;https://github.com/mojombo/jekyll/wiki/Sites&quot;&gt;Other Jekyll websites&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;what-does-jekyll-do&quot;&gt;What does Jekyll Do?&lt;/h3&gt;
+
+&lt;p&gt;Jekyll is a ruby gem you install on your local system.
+Once there you can call &lt;code&gt;jekyll --server&lt;/code&gt; on a directory and provided that directory
+is setup in a way jekyll expects, it will do magic stuff like parse markdown/textile files,
+compute categories, tags, permalinks, and construct your pages from layout templates and partials.&lt;/p&gt;
+
+&lt;p&gt;Once parsed, Jekyll stores the result in a self-contained static &lt;code&gt;_site&lt;/code&gt; folder.
+The intention here is that you can serve all contents in this folder statically from a plain static web-server.&lt;/p&gt;
+
+&lt;p&gt;You can think of Jekyll as a normalish dynamic blog but rather than parsing content, templates, and tags
+on each request, Jekyll does this once &lt;em&gt;beforehand&lt;/em&gt; and caches the &lt;em&gt;entire website&lt;/em&gt; in a folder for serving statically.&lt;/p&gt;
+
+&lt;h3 id=&quot;jekyll-is-not-blogging-software&quot;&gt;Jekyll is Not Blogging Software&lt;/h3&gt;
+
+&lt;p&gt;&lt;strong&gt;Jekyll is a parsing engine.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Jekyll does not come with any content nor does it have any templates or design elements.
+This is a common source of confusion when getting started.
+Jekyll does not come with anything you actually use or see on your website - you have to make it.&lt;/p&gt;
+
+&lt;h3 id=&quot;why-should-i-care&quot;&gt;Why Should I Care?&lt;/h3&gt;
+
+&lt;p&gt;Jekyll is very minimalistic and very efficient.
+The most important thing to realize about Jekyll is that it creates a static representation of your website requiring only a static web-server.
+Traditional dynamic blogs like Wordpress require a database and server-side code.
+Heavily trafficked dynamic blogs must employ a caching layer that ultimately performs the same job Jekyll sets out to do; serve static content.&lt;/p&gt;
+
+&lt;p&gt;Therefore if you like to keep things simple and you prefer the command-line over an admin panel UI then give Jekyll a try.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Developers like Jekyll because we can write content like we write code:&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Ability to write content in markdown or textile in your favorite text-editor.&lt;/li&gt;
+  &lt;li&gt;Ability to write and preview your content via localhost.&lt;/li&gt;
+  &lt;li&gt;No internet connection required.&lt;/li&gt;
+  &lt;li&gt;Ability to publish via git.&lt;/li&gt;
+  &lt;li&gt;Ability to host your blog on a static web-server.&lt;/li&gt;
+  &lt;li&gt;Ability to host freely on GitHub Pages.&lt;/li&gt;
+  &lt;li&gt;No database required.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h1 id=&quot;how-jekyll-works&quot;&gt;How Jekyll Works&lt;/h1&gt;
+
+&lt;p&gt;The following is a complete but concise outline of exactly how Jekyll works.&lt;/p&gt;
+
+&lt;p&gt;Be aware that core concepts are introduced in rapid succession without code examples.
+This information is not intended to specifically teach you how to do anything, rather it
+is intended to give you the &lt;em&gt;full picture&lt;/em&gt; relative to what is going on in Jekyll-world.&lt;/p&gt;
+
+&lt;p&gt;Learning these core concepts should help you avoid common frustrations and ultimately
+help you better understand the code examples contained throughout Jekyll-Bootstrap.&lt;/p&gt;
+
+&lt;h2 id=&quot;initial-setup&quot;&gt;Initial Setup&lt;/h2&gt;
+
+&lt;p&gt;After &lt;a href=&quot;/index.html#start-now&quot;&gt;installing jekyll&lt;/a&gt; you’ll need to format your website directory in a way jekyll expects.
+Jekyll-bootstrap conveniently provides the base directory format.&lt;/p&gt;
+
+&lt;h3 id=&quot;the-jekyll-application-base-format&quot;&gt;The Jekyll Application Base Format&lt;/h3&gt;
+
+&lt;p&gt;Jekyll expects your website directory to be laid out like so:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;.
+|-- _config.yml
+|-- _includes
+|-- _layouts
+|   |-- default.html
+|   |-- post.html
+|-- _posts
+|   |-- 2011-10-25-open-source-is-good.markdown
+|   |-- 2011-04-26-hello-world.markdown
+|-- _site
+|-- index.html
+|-- assets
+    |-- css
+        |-- style.css
+    |-- javascripts
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;_config.yml&lt;/strong&gt;
+  Stores configuration data.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;_includes&lt;/strong&gt;
+  This folder is for partial views.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;_layouts&lt;/strong&gt;
+  This folder is for the main templates your content will be inserted into.
+  You can have different layouts for different pages or page sections.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;_posts&lt;/strong&gt;
+  This folder contains your dynamic content/posts.
+  the naming format is required to be &lt;code&gt;@YEAR-MONTH-DATE-title.MARKUP@&lt;/code&gt;.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;_site&lt;/strong&gt;
+  This is where the generated site will be placed once Jekyll is done transforming it.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;assets&lt;/strong&gt;
+  This folder is not part of the standard jekyll structure.
+  The assets folder represents &lt;em&gt;any generic&lt;/em&gt; folder you happen to create in your root directory.
+  Directories and files not properly formatted for jekyll will be left untouched for you to serve normally.&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;(read more: &lt;a href=&quot;https://github.com/mojombo/jekyll/wiki/Usage&quot;&gt;https://github.com/mojombo/jekyll/wiki/Usage&lt;/a&gt;)&lt;/p&gt;
+
+&lt;h3 id=&quot;jekyll-configuration&quot;&gt;Jekyll Configuration&lt;/h3&gt;
+
+&lt;p&gt;Jekyll supports various configuration options that are fully outlined here:
+(&lt;a href=&quot;https://github.com/mojombo/jekyll/wiki/Configuration&quot;&gt;https://github.com/mojombo/jekyll/wiki/Configuration&lt;/a&gt;)&lt;/p&gt;
+
+&lt;h2 id=&quot;content-in-jekyll&quot;&gt;Content in Jekyll&lt;/h2&gt;
+
+&lt;p&gt;Content in Jekyll is either a post or a page.
+These content “objects” get inserted into one or more templates to build the final output for its respective static-page.&lt;/p&gt;
+
+&lt;h3 id=&quot;posts-and-pages&quot;&gt;Posts and Pages&lt;/h3&gt;
+
+&lt;p&gt;Both posts and pages should be written in markdown, textile, or HTML and may also contain Liquid templating syntax.
+Both posts and pages can have meta-data assigned on a per-page basis such as title, url path, as well as arbitrary custom meta-data.&lt;/p&gt;
+
+&lt;h3 id=&quot;working-with-posts&quot;&gt;Working With Posts&lt;/h3&gt;
+
+&lt;p&gt;&lt;strong&gt;Creating a Post&lt;/strong&gt;
+Posts are created by properly formatting a file and placing it the &lt;code&gt;_posts&lt;/code&gt; folder.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Formatting&lt;/strong&gt;
+A post must have a valid filename in the form &lt;code&gt;YEAR-MONTH-DATE-title.MARKUP&lt;/code&gt; and be placed in the &lt;code&gt;_posts&lt;/code&gt; directory.
+If the data format is invalid Jekyll will not recognize the file as a post. The date and title are automatically parsed from the filename of the post file.
+Additionally, each file must have &lt;a href=&quot;https://github.com/mojombo/jekyll/wiki/YAML-Front-Matter&quot;&gt;YAML Front-Matter&lt;/a&gt; prepended to its content.
+YAML Front-Matter is a valid YAML syntax specifying meta-data for the given file.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Order&lt;/strong&gt;
+Ordering is an important part of Jekyll but it is hard to specify a custom ordering strategy.
+Only reverse chronological and chronological ordering is supported in Jekyll.&lt;/p&gt;
+
+&lt;p&gt;Since the date is hard-coded into the filename format, to change the order, you must change the dates in the filenames.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Tags&lt;/strong&gt;
+Posts can have tags associated with them as part of their meta-data.
+Tags may be placed on posts by providing them in the post’s YAML front matter.
+You have access to the post-specific tags in the templates. These tags also get added to the sitewide collection.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Categories&lt;/strong&gt;
+Posts may be categorized by providing one or more categories in the YAML front matter.
+Categories offer more significance over tags in that they can be reflected in the URL path to the given post.
+Note categories in Jekyll work in a specific way.
+If you define more than one category you are defining a category hierarchy “set”.
+Example:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;---
+title :  Hello World
+categories : [lessons, beginner]
+---
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This defines the category hierarchy “lessons/beginner”. Note this is &lt;em&gt;one category&lt;/em&gt; node in Jekyll.
+You won’t find “lessons” and “beginner” as two separate categories unless you define them elsewhere as singular categories.&lt;/p&gt;
+
+&lt;h3 id=&quot;working-with-pages&quot;&gt;Working With Pages&lt;/h3&gt;
+
+&lt;p&gt;&lt;strong&gt;Creating a Page&lt;/strong&gt;
+Pages are created by properly formatting a file and placing it anywhere in the root directory or subdirectories that do &lt;em&gt;not&lt;/em&gt; start with an underscore.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Formatting&lt;/strong&gt;
+In order to register as a Jekyll page the file must contain &lt;a href=&quot;https://github.com/mojombo/jekyll/wiki/YAML-Front-Matter&quot;&gt;YAML Front-Matter&lt;/a&gt;.
+Registering a page means 1) that Jekyll will process the page and 2) that the page object will be available in the &lt;code&gt;site.pages&lt;/code&gt; array for inclusion into your templates.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Categories and Tags&lt;/strong&gt;
+Pages do not compute categories nor tags so defining them will have no effect.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Sub-Directories&lt;/strong&gt;
+If pages are defined in sub-directories, the path to the page will be reflected in the url.
+Example:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;.
+|-- people
+    |-- bob
+        |-- essay.html
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This page will be available at &lt;code&gt;http://yourdomain.com/people/bob/essay.html&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Recommended Pages&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;index.html&lt;/strong&gt;
+You will always want to define the root index.html page as this will display on your root URL.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;404.html&lt;/strong&gt;
+Create a root 404.html page and GitHub Pages will serve it as your 404 response.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;sitemap.html&lt;/strong&gt;
+Generating a sitemap is good practice for SEO.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;about.html&lt;/strong&gt;
+A nice about page is easy to do and gives the human perspective to your website.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;templates-in-jekyll&quot;&gt;Templates in Jekyll&lt;/h2&gt;
+
+&lt;p&gt;Templates are used to contain a page’s or post’s content.
+All templates have access to a global site object variable: &lt;code&gt;site&lt;/code&gt; as well as a page object variable: &lt;code&gt;page&lt;/code&gt;.
+The site variable holds all accessible content and metadata relative to the site.
+The page variable holds accessible data for the given page or post being rendered at that point.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Create a Template&lt;/strong&gt;
+Templates are created by properly formatting a file and placing it in the &lt;code&gt;_layouts&lt;/code&gt; directory.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Formatting&lt;/strong&gt;
+Templates should be coded in HTML and contain YAML Front Matter.
+All templates can contain Liquid code to work with your site’s data.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Rending Page/Post Content in a Template&lt;/strong&gt;
+There is a special variable in all templates named : &lt;code&gt;content&lt;/code&gt;.
+The &lt;code&gt;content&lt;/code&gt; variable holds the page/post content including any sub-template content previously defined.
+Render the content variable wherever you want your main content to be injected into your template:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;...
+&amp;lt;body&amp;gt;
+  &amp;lt;div id=&quot;sidebar&quot;&amp;gt; ... &amp;lt;/div&amp;gt;
+  &amp;lt;div id=&quot;main&quot;&amp;gt;
+    &amp;#123;{content}&amp;#125;
+  &amp;lt;/div&amp;gt;
+&amp;lt;/body&amp;gt;
+...&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&quot;sub-templates&quot;&gt;Sub-Templates&lt;/h3&gt;
+
+&lt;p&gt;Sub-templates are exactly templates with the only difference being they
+define another “root” layout/template within their YAML Front Matter.
+This essentially means a template will render inside of another template.&lt;/p&gt;
+
+&lt;h3 id=&quot;includes&quot;&gt;Includes&lt;/h3&gt;
+&lt;p&gt;In Jekyll you can define include files by placing them in the &lt;code&gt;_includes&lt;/code&gt; folder.
+Includes are NOT templates, rather they are just code snippets that get included into templates.
+In this way, you can treat the code inside includes as if it was native to the parent template.&lt;/p&gt;
+
+&lt;p&gt;Any valid template code may be used in includes.&lt;/p&gt;
+
+&lt;h2 id=&quot;using-liquid-for-templating&quot;&gt;Using Liquid for Templating&lt;/h2&gt;
+
+&lt;p&gt;Templating is perhaps the most confusing and frustrating part of Jekyll.
+This is mainly due to the fact that Jekyll templates must use the Liquid Templating Language.&lt;/p&gt;
+
+&lt;h3 id=&quot;what-is-liquid&quot;&gt;What is Liquid?&lt;/h3&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/Shopify/liquid&quot;&gt;Liquid&lt;/a&gt; is a secure templating language developed by &lt;a href=&quot;http://shopify.com&quot;&gt;Shopify&lt;/a&gt;.
+Liquid is designed for end-users to be able to execute logic within template files
+without imposing any security risk on the hosting server.&lt;/p&gt;
+
+&lt;p&gt;Jekyll uses Liquid to generate the post content within the final page layout structure and as the primary interface for working with
+your site and post/page data.&lt;/p&gt;
+
+&lt;h3 id=&quot;why-do-we-have-to-use-liquid&quot;&gt;Why Do We Have to Use Liquid?&lt;/h3&gt;
+
+&lt;p&gt;GitHub uses Jekyll to power &lt;a href=&quot;http://pages.github.com/&quot;&gt;GitHub Pages&lt;/a&gt;.
+GitHub cannot afford to run arbitrary code on their servers so they lock developers down via Liquid.&lt;/p&gt;
+
+&lt;h3 id=&quot;liquid-is-not-programmer-friendly&quot;&gt;Liquid is Not Programmer-Friendly.&lt;/h3&gt;
+
+&lt;p&gt;The short story is liquid is not real code and its not intended to execute real code.
+The point being you can’t do jackshit in liquid that hasn’t been allowed explicitly by the implementation.
+What’s more you can only access data-structures that have been explicitly passed to the template.&lt;/p&gt;
+
+&lt;p&gt;In Jekyll’s case it is not possible to alter what is passed to Liquid without hacking the gem or running custom plugins.
+Both of which cannot be supported by GitHub Pages.&lt;/p&gt;
+
+&lt;p&gt;As a programmer - this is very frustrating.&lt;/p&gt;
+
+&lt;p&gt;But rather than look a gift horse in the mouth we are going to
+suck it up and view it as an opportunity to work around limitations and adopt client-side solutions when possible.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Aside&lt;/strong&gt;
+My personal stance is to not invest time trying to hack liquid. It’s really unnecessary
+&lt;em&gt;from a programmer’s&lt;/em&gt; perspective. That is to say if you have the ability to run custom plugins (i.e. run arbitrary ruby code)
+you are better off sticking with ruby. Toward that end I’ve built &lt;a href=&quot;http://github.com/plusjade/mustache-with-jekyll&quot;&gt;Mustache-with-Jekyll&lt;/a&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;static-assets&quot;&gt;Static Assets&lt;/h2&gt;
+
+&lt;p&gt;Static assets are any file in the root or non-underscored subfolders that are not pages.
+That is they have no valid YAML Front Matter and are thus not treated as Jekyll Pages.&lt;/p&gt;
+
+&lt;p&gt;Static assets should be used for images, css, and javascript files.&lt;/p&gt;
+
+&lt;h2 id=&quot;how-jekyll-parses-files&quot;&gt;How Jekyll Parses Files&lt;/h2&gt;
+
+&lt;p&gt;Remember Jekyll is a processing engine. There are two main types of parsing in Jekyll.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;Content parsing.&lt;/strong&gt;
+  This is done with textile or markdown.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Template parsing.&lt;/strong&gt;
+This is done with the liquid templating language.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;And thus there are two main types of file formats needed for this parsing.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;Post and Page files.&lt;/strong&gt;
+All content in Jekyll is either a post or a page so valid posts and pages are parsed with markdown or textile.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Template files.&lt;/strong&gt;
+  These files go in &lt;code&gt;_layouts&lt;/code&gt; folder and contain your blogs &lt;strong&gt;templates&lt;/strong&gt;. They should be made in HTML with the help of Liquid syntax.
+  Since include files are simply injected into templates they are essentially parsed as if they were native to the template.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;Arbitrary files and folders.&lt;/strong&gt;
+Files that &lt;em&gt;are not&lt;/em&gt; valid pages are treated as static content and pass through
+Jekyll untouched and reside on your blog in the exact structure and format they originally existed in.&lt;/p&gt;
+
+&lt;h3 id=&quot;formatting-files-for-parsing&quot;&gt;Formatting Files for Parsing.&lt;/h3&gt;
+
+&lt;p&gt;We’ve outlined the need for valid formatting using &lt;strong&gt;YAML Front Matter&lt;/strong&gt;.
+Templates, posts, and pages all need to provide valid YAML Front Matter even if the Matter is empty.
+This is the only way Jekyll knows you want the file processed.&lt;/p&gt;
+
+&lt;p&gt;YAML Front Matter must be prepended to the top of template/post/page files:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;---
+layout: post
+category : pages
+tags : [how-to, jekyll]
+---
+
+... contents ...
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Three hyphens on a new line start the Front-Matter block and three hyphens on a new line end the block.
+The data inside the block must be valid YAML.&lt;/p&gt;
+
+&lt;p&gt;Configuration parameters for YAML Front-Matter is outlined here:
+&lt;a href=&quot;https://github.com/mojombo/jekyll/wiki/YAML-Front-Matter&quot;&gt;A comprehensive explanation of YAML Front Matter&lt;/a&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;defining-layouts-for-posts-and-templates-parsing&quot;&gt;Defining Layouts for Posts and Templates Parsing.&lt;/h4&gt;
+
+&lt;p&gt;The &lt;code&gt;layout&lt;/code&gt; parameter in the YAML Front Matter defines the template file for which the given post or template should be injected into.
+If a template file specifies its own layout, it is effectively being used as a &lt;code&gt;sub-template.&lt;/code&gt;
+That is to say loading a post file into a template file that refers to another template file with work in the way you’d expect; as a nested sub-template.&lt;/p&gt;
+
+&lt;h2 id=&quot;how-jekyll-generates-the-final-static-files&quot;&gt;How Jekyll Generates the Final Static Files.&lt;/h2&gt;
+
+&lt;p&gt;Ultimately, Jekyll’s job is to generate a static representation of your website.
+The following is an outline of how that’s done:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;Jekyll collects data.&lt;/strong&gt;
+  Jekyll scans the posts directory and collects all posts files as post objects. It then scans the layout assets and collects those and finally scans other directories in search of pages.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;Jekyll computes data.&lt;/strong&gt;
+  Jekyll takes these objects, computes metadata (permalinks, tags, categories, titles, dates) from them and constructs one
+  big &lt;code&gt;site&lt;/code&gt; object that holds all the posts, pages, layouts, and respective metadata.
+  At this stage your site is one big computed ruby object.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;Jekyll liquifies posts and templates.&lt;/strong&gt;
+  Next jekyll loops through each post file and converts (through markdown or textile) and &lt;strong&gt;liquifies&lt;/strong&gt; the post inside of its respective layout(s).
+  Once the post is parsed and liquified inside the the proper layout structure, the layout itself is “liquified”.
+ &lt;strong&gt;Liquification&lt;/strong&gt; is defined as follows: Jekyll initiates a Liquid template, and passes a simpler hash representation of the ruby site object as well as a simpler
+  hash representation of the ruby post object. These simplified data structures are what you have access to in the templates.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;Jekyll generates output.&lt;/strong&gt;
+ Finally the liquid templates are “rendered”, thereby processing any liquid syntax provided in the templates
+ and saving the final, static representation of the file.&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;strong&gt;Notes.&lt;/strong&gt;
+Because Jekyll computes the entire site in one fell swoop, each template is given access to
+a global &lt;code&gt;site&lt;/code&gt; hash that contains useful data. It is this data that you’ll iterate through and format
+using the Liquid tags and filters in order to render it onto a given page.&lt;/p&gt;
+
+&lt;p&gt;Remember, in Jekyll you are an end-user. Your API has only two components:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;The manner in which you setup your directory.&lt;/li&gt;
+  &lt;li&gt;The liquid syntax and variables passed into the liquid templates.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;All the data objects available to you in the templates via Liquid are outlined in the &lt;strong&gt;API Section&lt;/strong&gt; of Jekyll-Bootstrap.
+You can also read the original documentation here: &lt;a href=&quot;https://github.com/mojombo/jekyll/wiki/Template-Data&quot;&gt;https://github.com/mojombo/jekyll/wiki/Template-Data&lt;/a&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
+
+&lt;p&gt;I hope this paints a clearer picture of what Jekyll is doing and why it works the way it does.
+As noted, our main programming constraint is the fact that our API is limited to what is accessible via Liquid and Liquid only.&lt;/p&gt;
+
+&lt;p&gt;Jekyll-bootstrap is intended to provide helper methods and strategies aimed at making it more intuitive and easier to work with Jekyll =)&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Thank you&lt;/strong&gt; for reading this far.&lt;/p&gt;
+
+&lt;h2 id=&quot;next-steps&quot;&gt;Next Steps&lt;/h2&gt;
+
+&lt;p&gt;Please take a look at []()
+or jump right into &lt;a href=&quot;&quot;&gt;Usage&lt;/a&gt; if you’d like.&lt;/p&gt;
+</content>
+ </entry>
+ 
+ 
+</feed>
