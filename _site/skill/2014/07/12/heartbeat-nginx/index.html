@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Heartbeat nginx</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="web dev">
+    <link rel="canonical" href="http://xiaoshenge.github.io/skill/2014/07/12/heartbeat-nginx/">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/main.css">
+
+</head>
+
+
+    <body>
+
+    <header class="site-header">
+
+  <div class="wrap">
+
+    <a class="site-title" href="/">xiaoshengeWiki</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+           viewBox="0 0 18 15" enable-background="new 0 0 18 15" xml:space="preserve">
+          <path fill="#505050" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0
+            h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#505050" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484
+            h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#505050" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0
+            c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+      <div class="trigger">
+        
+          <a class="page-link" href="/about/">About</a>
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrap">
+      <div class="post">
+
+  <header class="post-header">
+    <h1>Heartbeat nginx</h1>
+    <p class="meta">Jul 12, 2014</p>
+  </header>
+
+  <article class="post-content">
+  <h2 id="section">安装</h2>
+
+<p>系统：Red Hat Enterprise Linux Server release 6.4 (Santiago)
+http://hg.linux-ha.org/</p>
+
+<p>1.添加账号</p>
+
+<pre><code>groupadd -g 5000 haclient
+useradd -u 5000 -g haclient hacluster
+</code></pre>
+
+<p>2.<a href="http://hg.linux-ha.org/glue/archive/tip.tar.gz">glue</a> </p>
+
+<pre><code>./autogen.sh 
+./configure --prefix=/usr
+make
+make install
+</code></pre>
+
+<p>遇到的问题：
+指定prefix到/usr ，如果不指定后面安装其他的组件的时候导致和其他组件目录冲突（导致组件安装不到同一个目录，比如/usr/lib64/heartbeat, /usr/local/heartbeat）, 建议prefix是/usr,这样方便后面安装heartbeat不需要指定头文件。</p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>安装过程会遇到依赖问题：缺少asciidoc,下载安装即可(不需指定prefix)。缺少libtool-ltdl，下载libtool安装后还是报错缺少libtool，通过查资料猜测可能是版本问题。然后通过rpm查找系统默认安装的libtool，rpm -qa</td>
+      <td>grep libtool 发现默认安装的是libtool-2.2.6，然后下载对应的libtool安装后解决。</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>3.<a href="https://github.com/ClusterLabs/resource-agents">Cluster Resource Agents</a>
+	./autogen.sh 
+	./configure –prefix=/usr
+	make
+	make install</p>
+
+<p>4.<a href="http://hg.linux-ha.org/heartbeat-STABLE_3_0/archive/tip.tar.gz">Heartbeat 3.0</a></p>
+
+<pre><code>./bootstrap 
+./configure --prefix=/usr
+make
+make install
+</code></pre>
+
+<ol>
+  <li><a href="https://github.com/ClusterLabs/pacemaker-1.0">pacemaker-1.0</a>
+ ./autogen.sh 
+ ./configure –prefix=/usr
+ make
+ make install</li>
+</ol>
+
+<p>遇到的问题：pacemaker依赖：<a href="https://github.com/ClusterLabs/libqb">libqb</a>, <a href="https://github.com/corosync/corosync">corosync</a>
+安装1.0版本原因：github有2个版本，安装pacemake的时候编译不通过，需要删掉pkg-config检查libqb版本的方法才能编译通过，所以就安装了pacemaker1.0版本。</p>
+
+<h2 id="section-1">配置</h2>
+
+<p>/usr/etc/ha.d/ha.cf</p>
+
+<pre><code>debugfile /var/log/ha-debug  
+logfile /var/log/ha-log   
+logfacility     local0
+crm on  #是否开启Cluster Resource Manager（集群资源管理）功能。  
+bcast eth0 #指明心跳使用以太网广播方式，并且是在eth1接口上进行广播。  
+keepalive 2 #指定心跳间隔时间为2秒（即每两秒钟在eth1上发送一次广播）。  
+deadtime 30 #指定备用节点在30秒内没有收到主节点的心跳信号后，则立即接管主节点的服务资源。  
+warntime 10 #指定心跳延迟的时间为十秒。当10秒钟内备份节点不能接收到主节点的心跳信号时，就会往日志中写入一个警告日志，但此时不会切换服务。  
+initdead 120 #在某些系统上，系统启动或重启之后需要经过一段时间网络才能正常工作，该选项用于解决这种情况产生的时间间隔。取值至少为deadtime的两倍。   
+udpport 694 #设置广播通信使用的端口，694为默认使用的端口号。(如果开启了iptables，对应机器要打开UDP的694端口)  
+baud 19200 #设置串行通信的波特率。  
+ucast eth0 192.168.1.2 #采用网卡eth0的udp单播来组织心跳，后面跟的IP地址应为双机对方的IP地址。  (主节点就写从节点的ip， 从节点就写主节点的ip)
+auto_failback on #用来定义当主节点恢复后，是否将服务自动切回，heartbeat的两台主机分别为主节点和备份节点。主节点在正常情况下占用资源并运行所有的服务，遇到故障时把资源交给备份节点并由备份节点运行服务。在该选项设为on的情况下，一旦主节点恢复运行，则自动获取资源并取代备份节点，如果该选项设置为off，那么当主节点恢复后，将变为备份节点，而原来的备份节点成为主节点。  
+node node1 #主节点主机名，可以通过命令“uanme –n”查看。  
+node node2 #备用节点主机名。  
+ping 192.168.12.1 #选择ping的节点，ping 节点选择的越好，HA集群就越强壮，可以选择固定的路由器作为ping节点，但是最好不要选择集群中的成员作为ping节点，ping节点仅仅用来测试网络连接。  
+respawn hacluster /usr/lib64/heartbeat/ipfail
+respawn hacluster /usr/lib64/heartbeat/cibmon -d
+apiauth ipfail gid=haclient uid=hacluster
+apiauth cibmon gid=haclient uid=hacluster
+</code></pre>
+
+<p>haresource
+	#pacemaker cms 需要将其转化为xml /usr/lib64/heartbeat/haresources2cib.py /usr/etc/ha.d/haresources 生成的文件在/usr/var/lib/heartbeat/crm/cib.xml
+	redhat6.4_3     10.21.192.238 nginx #主节点名 vip 服务（/etc/init.d/里面要有对应的控制脚本start|stop|status）
+authkeys
+	#authkeys 权限是600
+	auth 1
+	1 crc</p>
+
+<h3 id="crm-">crm 配置及监控</h3>
+
+<p>监控：crm_mon -Afr</p>
+
+<p>配置: node1,node2的heartbeat启动后：默认配置是node1的nginx挂掉后，crm会自动重启nginx不会迁移到node2，需配置</p>
+
+<pre><code>/*
+默认：migration-threshold=1000000	fail-count=1
+通过nginx stop， crm_mon --failcounts可以查看
+执行crm configure报错ERROR: You may try the upgrade command， 执行cibadmin --upgrade --force即可解决
+*/
+crm configure rsc_defaults migration-threshold=1
+crm configure rsc_defaults failure-timeout=10s
+</code></pre>
+
+<h2 id="section-2">参考</h2>
+<p><a href="http://hg.linux-ha.org/">linux-ha</a></p>
+
+<p><a href="http://www.linux-ha.org/doc/users-guide/users-guide.html">The Linux-HA User’s Guide</a></p>
+
+<p><a href="http://www.novell.com/zh-cn/documentation/sle_ha/book_sleha/data/book_sleha.html">High Availability 指南</a></p>
+
+<p><a href="http://club.topsage.com/thread-530648-1-1.html">Heartbeat实现Nginx高可用性(style 1.x) </a></p>
+
+<p><a href="http://club.topsage.com/thread-530655-1-1.html">Heartbeat实现Nginx高可用性(style 2.x)</a></p>
+
+<p><a href="http://ixdba.blog.51cto.com/2895551/745228">Heartbeat3.x应用全攻略之：概念组成及工作原理</a></p>
+
+<p><a href="http://ixdba.blog.51cto.com/2895551/746271">Heartbeat3.x应用全攻略之：安装、配置、维护</a></p>
+
+<p><a href="http://my.oschina.net/lianshunke/blog/200411">heartbeat + pacemaker实现pg流复制自动切换</a></p>
+
+<p><a href="http://my.oschina.net/guol/blog/90128">Heartbeat3.0.5+pacemaker</a></p>
+
+  </article>
+
+</div>
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrap">
+
+    <h2 class="footer-heading">xiaoshengeWiki</h2>
+
+    <div class="footer-col-1 column">
+      <ul>
+        <li>xiaoshengeWiki</li>
+        <li><a href="mailto:xiaoshengeer@gmail.com">xiaoshengeer@gmail.com</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col-2 column">
+      <ul>
+        <li>
+          <a href="https://github.com/xiaoshenge">
+            <span class="icon github">
+              <svg version="1.1" class="github-icon-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                 viewBox="0 0 16 16" enable-background="new 0 0 16 16" xml:space="preserve">
+                <path fill-rule="evenodd" clip-rule="evenodd" fill="#C2C2C2" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761
+                c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32
+                c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472
+                c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037
+                C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65
+                c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261
+                c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082
+                c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129
+                c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+              </svg>
+            </span>
+            <span class="username">xiaoshenge</span>
+          </a>
+        </li>
+        
+      </ul>
+    </div>
+
+    <div class="footer-col-3 column">
+      <p class="text">web dev</p>
+    </div>
+
+  </div>
+
+</footer>
+
+
+    </body>
+</html>

@@ -1,0 +1,633 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>xiaoshengeWiki</title>
+    <description>web dev</description>
+    <link>http://xiaoshenge.github.io/</link>
+    <atom:link href="http://xiaoshenge.github.io/feed.xml" rel="self" type="application/rss+xml" />
+    <pubDate>Sat, 12 Jul 2014 22:56:59 +0800</pubDate>
+    <lastBuildDate>Sat, 12 Jul 2014 22:56:59 +0800</lastBuildDate>
+    <generator>Jekyll v2.1.1</generator>
+    
+      <item>
+        <title>Welcome to Jekyll!</title>
+        <description>&lt;p&gt;You’ll find this post in your &lt;code&gt;_posts&lt;/code&gt; directory - edit this post and re-build (or run with the &lt;code&gt;-w&lt;/code&gt; switch) to see your changes!
+To add new posts, simply add a file in the &lt;code&gt;_posts&lt;/code&gt; directory that follows the convention: YYYY-MM-DD-name-of-post.ext.&lt;/p&gt;
+
+&lt;p&gt;Jekyll also offers powerful support for code snippets:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;print_hi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+  &lt;span class=&quot;nb&quot;&gt;puts&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot;Hi, &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&amp;quot;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;print_hi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&amp;#39;Tom&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;#=&amp;gt; prints &amp;#39;Hi, Tom&amp;#39; to STDOUT.&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Check out the &lt;a href=&quot;http://jekyllrb.com&quot;&gt;Jekyll docs&lt;/a&gt; for more info on how to get the most out of Jekyll. File all bugs/feature requests at &lt;a href=&quot;https://github.com/jekyll/jekyll&quot;&gt;Jekyll’s GitHub repo&lt;/a&gt;.&lt;/p&gt;
+
+</description>
+        <pubDate>Sun, 13 Jul 2014 06:24:01 +0800</pubDate>
+        <link>http://xiaoshenge.github.io/jekyll/update/2014/07/13/welcome-to-jekyll/</link>
+        <guid isPermaLink="true">http://xiaoshenge.github.io/jekyll/update/2014/07/13/welcome-to-jekyll/</guid>
+        
+        
+        <category>jekyll</category>
+        
+        <category>update</category>
+        
+      </item>
+    
+      <item>
+        <title>Heartbeat nginx</title>
+        <description>&lt;h2 id=&quot;section&quot;&gt;安装&lt;/h2&gt;
+
+&lt;p&gt;系统：Red Hat Enterprise Linux Server release 6.4 (Santiago)
+http://hg.linux-ha.org/&lt;/p&gt;
+
+&lt;p&gt;1.添加账号&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;groupadd -g 5000 haclient
+useradd -u 5000 -g haclient hacluster
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;2.&lt;a href=&quot;http://hg.linux-ha.org/glue/archive/tip.tar.gz&quot;&gt;glue&lt;/a&gt; &lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;./autogen.sh 
+./configure --prefix=/usr
+make
+make install
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;遇到的问题：
+指定prefix到/usr ，如果不指定后面安装其他的组件的时候导致和其他组件目录冲突（导致组件安装不到同一个目录，比如/usr/lib64/heartbeat, /usr/local/heartbeat）, 建议prefix是/usr,这样方便后面安装heartbeat不需要指定头文件。&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;安装过程会遇到依赖问题：缺少asciidoc,下载安装即可(不需指定prefix)。缺少libtool-ltdl，下载libtool安装后还是报错缺少libtool，通过查资料猜测可能是版本问题。然后通过rpm查找系统默认安装的libtool，rpm -qa&lt;/td&gt;
+      &lt;td&gt;grep libtool 发现默认安装的是libtool-2.2.6，然后下载对应的libtool安装后解决。&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;3.&lt;a href=&quot;https://github.com/ClusterLabs/resource-agents&quot;&gt;Cluster Resource Agents&lt;/a&gt;
+	./autogen.sh 
+	./configure –prefix=/usr
+	make
+	make install&lt;/p&gt;
+
+&lt;p&gt;4.&lt;a href=&quot;http://hg.linux-ha.org/heartbeat-STABLE_3_0/archive/tip.tar.gz&quot;&gt;Heartbeat 3.0&lt;/a&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;./bootstrap 
+./configure --prefix=/usr
+make
+make install
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/ClusterLabs/pacemaker-1.0&quot;&gt;pacemaker-1.0&lt;/a&gt;
+ ./autogen.sh 
+ ./configure –prefix=/usr
+ make
+ make install&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;遇到的问题：pacemaker依赖：&lt;a href=&quot;https://github.com/ClusterLabs/libqb&quot;&gt;libqb&lt;/a&gt;, &lt;a href=&quot;https://github.com/corosync/corosync&quot;&gt;corosync&lt;/a&gt;
+安装1.0版本原因：github有2个版本，安装pacemake的时候编译不通过，需要删掉pkg-config检查libqb版本的方法才能编译通过，所以就安装了pacemaker1.0版本。&lt;/p&gt;
+
+&lt;h2 id=&quot;section-1&quot;&gt;配置&lt;/h2&gt;
+
+&lt;p&gt;/usr/etc/ha.d/ha.cf&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;debugfile /var/log/ha-debug  
+logfile /var/log/ha-log   
+logfacility     local0
+crm on  #是否开启Cluster Resource Manager（集群资源管理）功能。  
+bcast eth0 #指明心跳使用以太网广播方式，并且是在eth1接口上进行广播。  
+keepalive 2 #指定心跳间隔时间为2秒（即每两秒钟在eth1上发送一次广播）。  
+deadtime 30 #指定备用节点在30秒内没有收到主节点的心跳信号后，则立即接管主节点的服务资源。  
+warntime 10 #指定心跳延迟的时间为十秒。当10秒钟内备份节点不能接收到主节点的心跳信号时，就会往日志中写入一个警告日志，但此时不会切换服务。  
+initdead 120 #在某些系统上，系统启动或重启之后需要经过一段时间网络才能正常工作，该选项用于解决这种情况产生的时间间隔。取值至少为deadtime的两倍。   
+udpport 694 #设置广播通信使用的端口，694为默认使用的端口号。(如果开启了iptables，对应机器要打开UDP的694端口)  
+baud 19200 #设置串行通信的波特率。  
+ucast eth0 192.168.1.2 #采用网卡eth0的udp单播来组织心跳，后面跟的IP地址应为双机对方的IP地址。  (主节点就写从节点的ip， 从节点就写主节点的ip)
+auto_failback on #用来定义当主节点恢复后，是否将服务自动切回，heartbeat的两台主机分别为主节点和备份节点。主节点在正常情况下占用资源并运行所有的服务，遇到故障时把资源交给备份节点并由备份节点运行服务。在该选项设为on的情况下，一旦主节点恢复运行，则自动获取资源并取代备份节点，如果该选项设置为off，那么当主节点恢复后，将变为备份节点，而原来的备份节点成为主节点。  
+node node1 #主节点主机名，可以通过命令“uanme –n”查看。  
+node node2 #备用节点主机名。  
+ping 192.168.12.1 #选择ping的节点，ping 节点选择的越好，HA集群就越强壮，可以选择固定的路由器作为ping节点，但是最好不要选择集群中的成员作为ping节点，ping节点仅仅用来测试网络连接。  
+respawn hacluster /usr/lib64/heartbeat/ipfail
+respawn hacluster /usr/lib64/heartbeat/cibmon -d
+apiauth ipfail gid=haclient uid=hacluster
+apiauth cibmon gid=haclient uid=hacluster
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;haresource
+	#pacemaker cms 需要将其转化为xml /usr/lib64/heartbeat/haresources2cib.py /usr/etc/ha.d/haresources 生成的文件在/usr/var/lib/heartbeat/crm/cib.xml
+	redhat6.4_3     10.21.192.238 nginx #主节点名 vip 服务（/etc/init.d/里面要有对应的控制脚本start|stop|status）
+authkeys
+	#authkeys 权限是600
+	auth 1
+	1 crc&lt;/p&gt;
+
+&lt;h3 id=&quot;crm-&quot;&gt;crm 配置及监控&lt;/h3&gt;
+
+&lt;p&gt;监控：crm_mon -Afr&lt;/p&gt;
+
+&lt;p&gt;配置: node1,node2的heartbeat启动后：默认配置是node1的nginx挂掉后，crm会自动重启nginx不会迁移到node2，需配置&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;/*
+默认：migration-threshold=1000000	fail-count=1
+通过nginx stop， crm_mon --failcounts可以查看
+执行crm configure报错ERROR: You may try the upgrade command， 执行cibadmin --upgrade --force即可解决
+*/
+crm configure rsc_defaults migration-threshold=1
+crm configure rsc_defaults failure-timeout=10s
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;section-2&quot;&gt;参考&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&quot;http://hg.linux-ha.org/&quot;&gt;linux-ha&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.linux-ha.org/doc/users-guide/users-guide.html&quot;&gt;The Linux-HA User’s Guide&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.novell.com/zh-cn/documentation/sle_ha/book_sleha/data/book_sleha.html&quot;&gt;High Availability 指南&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://club.topsage.com/thread-530648-1-1.html&quot;&gt;Heartbeat实现Nginx高可用性(style 1.x) &lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://club.topsage.com/thread-530655-1-1.html&quot;&gt;Heartbeat实现Nginx高可用性(style 2.x)&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://ixdba.blog.51cto.com/2895551/745228&quot;&gt;Heartbeat3.x应用全攻略之：概念组成及工作原理&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://ixdba.blog.51cto.com/2895551/746271&quot;&gt;Heartbeat3.x应用全攻略之：安装、配置、维护&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://my.oschina.net/lianshunke/blog/200411&quot;&gt;heartbeat + pacemaker实现pg流复制自动切换&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://my.oschina.net/guol/blog/90128&quot;&gt;Heartbeat3.0.5+pacemaker&lt;/a&gt;&lt;/p&gt;
+</description>
+        <pubDate>Sat, 12 Jul 2014 00:00:00 +0800</pubDate>
+        <link>http://xiaoshenge.github.io/skill/2014/07/12/heartbeat-nginx/</link>
+        <guid isPermaLink="true">http://xiaoshenge.github.io/skill/2014/07/12/heartbeat-nginx/</guid>
+        
+        <category>heartbeat</category>
+        
+        
+        <category>skill</category>
+        
+      </item>
+    
+      <item>
+        <title>PHP正则笔记</title>
+        <description>&lt;h4 id=&quot;section&quot;&gt;中文字符&lt;/h4&gt;
+&lt;p&gt;gbk编码下中文字符正则会出现乱码问题：解决方案是转码用utf8&lt;/p&gt;
+
+&lt;p&gt;中文字符匹配正则:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;UTF-8:/[\u{4e00}-\u{9fff}]/u
+GBK:/([\xb0-\xfe][\x00-xff])+/
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;utf8必须指定Unicode模式，gbk下匹配多个字符，必须添加括号将两个字节将两个字节作为一组&lt;/p&gt;
+
+&lt;h4 id=&quot;section-1&quot;&gt;. * 的滥用&lt;/h4&gt;
+&lt;pre&gt;&lt;code&gt;&amp;lt;?php
+$str = &amp;lt;&amp;lt;&amp;lt;EOF
+&amp;lt;h4&amp;gt;第1集&amp;lt;/h4&amp;gt;
+aaa
+aaa
+&amp;lt;h4&amp;gt;第2集&amp;lt;/h4&amp;gt;
+bbbbb
+EOF;
+
+$reg1 = &quot;/&amp;lt;h4&amp;gt;(.*?)&amp;lt;\/h4&amp;gt;(.*)/Us&quot;;
+
+$reg2 = &quot;/&amp;lt;h4&amp;gt;(.*?)&amp;lt;\/h4&amp;gt;(((?!&amp;lt;h4&amp;gt;).)*)/s&quot;;
+
+preg_match_all($reg1, $str, $match1);
+preg_match_all($reg2, $str, $match2);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;$reg1用的是. * , h4下面的内容就匹配不到，改用$reg2就可以解决问题&lt;/p&gt;
+
+&lt;h4 id=&quot;section-2&quot;&gt;中文乱码的情况&lt;/h4&gt;
+&lt;pre&gt;&lt;code&gt;&amp;lt;?php
+$str = &amp;lt;&amp;lt;&amp;lt;EOF
+&amp;lt;a href=&quot;a-中文.html&quot;&amp;gt;中文&amp;lt;/a&amp;gt;， 英文，懂中文
+EOF;
+
+$reg = &#39;/[^-&amp;gt;]中文/&#39;;
+$replace = &quot;&amp;lt;a&amp;gt;不懂中文&amp;lt;/a&amp;gt;&quot;
+
+$str = preg_replace($reg, $replace, $str, 1);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;str出现乱码,解决方案：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$reg = &#39;(.*[^-|])(中文)&#39;;
+
+$str = preg_replace($reg, &quot;$1{$replace}&quot;, $str, 1);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;第一种方法$reg是整体，替换就会把[^-&amp;gt;]替换，所以要把$reg分成2个部分&lt;/p&gt;
+
+&lt;p&gt;[]()&lt;/p&gt;
+
+</description>
+        <pubDate>Sun, 21 Apr 2013 00:00:00 +0800</pubDate>
+        <link>http://xiaoshenge.github.io/skill/2013/04/21/php-reg/</link>
+        <guid isPermaLink="true">http://xiaoshenge.github.io/skill/2013/04/21/php-reg/</guid>
+        
+        <category>PHP</category>
+        
+        
+        <category>skill</category>
+        
+      </item>
+    
+      <item>
+        <title>ios view controller</title>
+        <description>&lt;p&gt;&lt;a href=&quot;http://developer.apple.com/library/ios/#featuredarticles/ViewControllerPGforiPhoneOS/Introduction/Introduction.html#//apple_ref/doc/uid/TP40007457&quot;&gt;View Controller Programming Guide for iOS&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;instantiating-another-view-controller-inside-the-same-storyboard&quot;&gt;Instantiating another view controller inside the same storyboard&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code&gt;-(void)viewDidAppear:(BOOL)animated{
+	 UIStoryboard *storyboard = self.storyboard;
+SpecialViewController *svc = [storyboard instantiateViewControllerWithIdentifier:@&quot;SpecialViewController&quot;];
+ 
+// Configure the new view controller here.
+ 
+[self presentViewController:svc animated:YES completion:nil];
+}
+
+- (IBAction)showAnotherView:(id)sender{
+	UIViewController *splitView = [self.storyboard instantiateViewControllerWithIdentifier:@&quot;SplitView&quot;];
+    XReaderAppDelegate *app = (XReaderAppDelegate *)[[UIApplication sharedApplication] delegate];
+    [app.window setRootViewController:splitView];
+} ###Instantiating a view controller from a new storyboard###
+ 
+- (IBAction)gotoView2:(id)sender
+{
+UIViewController *testView = [[UIStoryboard storyboardWithName:@&quot;test2&quot; bundle:nil] instantiateInitialViewController];
+[self presentViewController:testView animated:YES completion:nil];
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+</description>
+        <pubDate>Tue, 12 Mar 2013 00:00:00 +0800</pubDate>
+        <link>http://xiaoshenge.github.io/skill/2013/03/12/ios-view-controller/</link>
+        <guid isPermaLink="true">http://xiaoshenge.github.io/skill/2013/03/12/ios-view-controller/</guid>
+        
+        <category>ios</category>
+        
+        
+        <category>skill</category>
+        
+      </item>
+    
+      <item>
+        <title>git常用命令</title>
+        <description>&lt;p&gt;&lt;a href=&quot;http://robbinfan.com/blog/34/git-common-command&quot;&gt;git常用备忘录&lt;/a&gt;&lt;/p&gt;
+
+&lt;h6 id=&quot;section&quot;&gt;查看提交历史&lt;/h6&gt;
+&lt;pre&gt;&lt;code&gt;git log
+git log &amp;lt;file&amp;gt; #查看该文件提交历史记录
+git log -p &amp;lt;file&amp;gt; #查看每次详细修改内容的diff
+git log -p &amp;lt;file&amp;gt; -2 #查看最近2次详细修改内容的diff
+git log --stat #查看提交统计信息
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h6 id=&quot;section-1&quot;&gt;恢复已删除文件&lt;/h6&gt;
+&lt;pre&gt;&lt;code&gt;git checkout file #直接rm的文件还没有commit
+git checkout HEAD~1 --file #从上一次提交中恢复file
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+        <pubDate>Tue, 05 Mar 2013 00:00:00 +0800</pubDate>
+        <link>http://xiaoshenge.github.io/skill/2013/03/05/git-command/</link>
+        <guid isPermaLink="true">http://xiaoshenge.github.io/skill/2013/03/05/git-command/</guid>
+        
+        <category>git</category>
+        
+        
+        <category>skill</category>
+        
+      </item>
+    
+      <item>
+        <title>linux selinux</title>
+        <description>&lt;p&gt;在centos下使用samb一直都提示位置不对，但是ssh可以连接上就没怀疑是本地限制问题，一直以为是网络问题，导致纠结了老久。
+先记录一下selinx：
+临时关闭：setenforce 0
+永久关闭：/etc/selinux/config SELINUX=disabled
+[]()&lt;/p&gt;
+
+</description>
+        <pubDate>Fri, 30 Nov 2012 00:00:00 +0800</pubDate>
+        <link>http://xiaoshenge.github.io/skill/2012/11/30/linux-selinux/</link>
+        <guid isPermaLink="true">http://xiaoshenge.github.io/skill/2012/11/30/linux-selinux/</guid>
+        
+        <category>linux</category>
+        
+        
+        <category>skill</category>
+        
+      </item>
+    
+      <item>
+        <title>ios学习笔记</title>
+        <description>&lt;h2 id=&quot;start-developing-ios-apps-todayhttpdeveloperapplecomlibraryiosreferencelibrarygettingstartedroadmapioschaptersintroductionhtml&quot;&gt;&lt;a href=&quot;http://developer.apple.com/library/ios/#referencelibrary/GettingStarted/RoadMapiOS/chapters/Introduction.html&quot;&gt;Start Developing iOS Apps Today&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&quot;http://developer.apple.com/library/ios/#referencelibrary/GettingStarted/RoadMapiOSCh/chapters/Introduction.html&quot;&gt;中文版&lt;/a&gt;
+&amp;gt; &lt;a href=&quot;http://developer.apple.com/library/ios/#referencelibrary/GettingStarted/RoadMapiOS/chapters/RM_YourFirstApp_iOS/Articles/00_Introduction.html&quot;&gt;Your First iOS App&lt;/a&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;objective-c&quot;&gt;Objective-C&lt;/h2&gt;
+&lt;ol&gt;
+  &lt;li&gt;&lt;a href=&quot;http://developer.apple.com/library/ios/#documentation/Cocoa/Conceptual/ObjectiveC/Introduction/introObjectiveC.html#//apple_ref/doc/uid/TP30001163&quot;&gt;The Objective-C Programming Language&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://developer.apple.com/library/ios/#documentation/Cocoa/Conceptual/ProgrammingWithObjectiveC/Introduction/Introduction.html#//apple_ref/doc/uid/TP40011210&quot;&gt;Programming with Objective-C&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id=&quot;doucument&quot;&gt;doucument&lt;/h2&gt;
+&lt;ol&gt;
+  &lt;li&gt;&lt;a href=&quot;https://developer.apple.com/library/ios/#documentation/iPhone/Conceptual/iPhoneOSProgrammingGuide/Introduction/Introduction.html#//apple_ref/doc/uid/TP40007072&quot;&gt;iOS App Programming Guide&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id=&quot;section&quot;&gt;其他&lt;/h2&gt;
+&lt;ol&gt;
+  &lt;li&gt;&lt;a href=&quot;http://www.cocoachina.com/bbs/read.php?tid-7923.html&quot;&gt;如何联机调试和发布程序(99$)&lt;/a&gt;
+&amp;gt; 借用别人的开发者账号学习，在Certificates Development使用的是别人已经存在的，下载到自己机器，然后调试代码的时候始终报错： non-expired certificate/private key pair in you keychain.由于开始不敢随便操作Certificates就一直不知道怎么解决，后来想既然是development修改也不会影响distribution的，就把之前的那个development的certificate revoke了，安装教程重新操作一次就ok了。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;2.&lt;a href=&quot;http://www.ravelrumba.com/blog/ipad-http-debugging/&quot;&gt;iPad HTTP Debugging with Charles&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.apple.com.cn/developer/&quot;&gt;苹果开发者联盟&lt;/a&gt;&lt;/p&gt;
+</description>
+        <pubDate>Tue, 23 Oct 2012 00:00:00 +0800</pubDate>
+        <link>http://xiaoshenge.github.io/skill/2012/10/23/learning-ios/</link>
+        <guid isPermaLink="true">http://xiaoshenge.github.io/skill/2012/10/23/learning-ios/</guid>
+        
+        <category>ios</category>
+        
+        
+        <category>skill</category>
+        
+      </item>
+    
+      <item>
+        <title>代理</title>
+        <description>&lt;p&gt;1.goagent&lt;/p&gt;
+
+&lt;p&gt;2.vps
+###mac###&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;ssh -D 7000 user@host
+
+proxy switch sharp socke5代理：localhost 7000 请注意选择socket v5
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://zhengyaotian.com/System/Mac%E4%B8%8B%E6%9C%80%E7%AE%80%E5%8D%95%E7%9A%84%E7%BF%BB%E5%A2%99%E6%8A%80%E5%B7%A7&quot;&gt;参考&lt;/a&gt;&lt;/p&gt;
+
+</description>
+        <pubDate>Mon, 22 Oct 2012 00:00:00 +0800</pubDate>
+        <link>http://xiaoshenge.github.io/skill/2012/10/22/proxy/</link>
+        <guid isPermaLink="true">http://xiaoshenge.github.io/skill/2012/10/22/proxy/</guid>
+        
+        <category>system</category>
+        
+        
+        <category>skill</category>
+        
+      </item>
+    
+      <item>
+        <title>PHP常用header</title>
+        <description>&lt;p&gt;PHP is not limited to outputting html. PHP can output images, pdf, javascript files, etc. Browsers determine what type of content is by analyzing the headers sent. In this tutorial I will present you with some examples of how to send headers. To send PHP header use the function header(). You must call this function before any output. Use the function headers_sent() to check whether the headers have been sent and output started. &lt;/p&gt;
+
+&lt;p&gt;301 moved permanently (redirect):&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;?php 
+header(&#39;HTTP/1.1 301 Moved Permanently&#39;);
+header(&#39;Location: http://www.example.com&#39;);
+die();
+?&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;302 moved temporarily(redirect):&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;?php 
+header(&#39;Location: http://www.example.com&#39;);
+die();
+?&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;404 Page Not Found: &lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;?php 
+header(&#39;HTTP/1.1 404 Not Found&#39;);
+?&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Service not avaliable: &lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;?php 
+header(&#39;HTTP/1.1 503 Service Temporarily Unavailable&#39;);
+header(&#39;Status: 503 Service Temporarily Unavailable&#39;);
+header(&#39;Retry-After: 60&#39;);
+?&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;CSS: &lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;?php
+header(&#39;Content-Type: text/css&#39;);
+?&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Javascript header: &lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;?php 
+header(&#39;Content-Type: application/javascript&#39;);
+?&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Images:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;For JPEG(jpg): 
+&amp;lt;?php 
+header(&#39;Content-Type: image/jpeg&#39;);
+?&amp;gt; 
+For PNG: 
+&amp;lt;?php 
+header(&#39;Content-Type: image/png&#39;);
+?&amp;gt; 
+For BMP: 
+&amp;lt;?php 
+header(&#39;Content-Type: image/bmp&#39;);
+?&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;PDF (output pdf with php): &lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;?php 
+header(&#39;Content-Type: application/pdf&#39;);
+echo file_get_contents(&#39;filename.pdf&#39;);
+?&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Cache (force browsers not to cache files): &lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;?php 
+header(&#39;Expires: Sat, 26 Jul 1997 05:00:00 GMT&#39;);
+header(&#39;Cache-Control: no-store, no-cache, must-revalidate&#39;);
+header(&#39;Cache-Control: pre-check=0, post-check=0, max-age=0&#39;);
+header (&#39;Pragma: no-cache&#39;); 
+?&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Download dialog: &lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;?php 
+header(&#39;Content-Disposition: attachment; filename=&#39; . urlencode($f));   
+header(&#39;Content-Type: application/force-download&#39;);
+header(&#39;Content-Type: application/octet-stream&#39;);
+header(&#39;Content-Type: application/download&#39;);
+header(&#39;Content-Description: File Transfer&#39;);            
+header(&#39;Content-Length: &#39; . filesize($f));
+echo file_get_contents($f);
+?&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Authentication (force the browser to pop up a Username/Password input window) - only available when PHP is running as an Apache module: &lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;?php
+if (!isset($_SERVER[&#39;PHP_AUTH_USER&#39;])) {
+    header(&#39;WWW-Authenticate: Basic realm=&quot;The Realm&quot;&#39;);
+    header(&#39;HTTP/1.0 401 Unauthorized&#39;);
+    echo &#39;If cancel is pressed this text shows&#39;;
+    die();
+} else {
+//always escape your data//
+$user=&#39;user&#39;;
+$pass=&#39;pass&#39;;
+   if($_SERVER[&#39;PHP_AUTH_USER&#39;]==$user &amp;amp;&amp;amp; $_SERVER[&#39;PHP_AUTH_PW&#39;]==$pass){
+    echo &#39;Authorized&#39;;
+}
+}
+?&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;php header编码&lt;/p&gt;
+
+&lt;p&gt;header(“Content-type: text/html; charset=utf-8”); &lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://phpweby.com/tutorials/php/35&quot;&gt;参考&lt;/a&gt;&lt;/p&gt;
+
+</description>
+        <pubDate>Wed, 10 Oct 2012 00:00:00 +0800</pubDate>
+        <link>http://xiaoshenge.github.io/skill/2012/10/10/php-header/</link>
+        <guid isPermaLink="true">http://xiaoshenge.github.io/skill/2012/10/10/php-header/</guid>
+        
+        <category>PHP</category>
+        
+        
+        <category>skill</category>
+        
+      </item>
+    
+      <item>
+        <title>常用svn操作</title>
+        <description>&lt;p&gt;搭建 svn服务器安装Subversion 
+#apt-get install subversion 
+新建存储仓库 
+#mkdir /home/svnrepos 
+#svnadmin create /home/svnrepos/TestProject 
+修改配置 
+#cd /home/svnreos/TestProject/conf 
+#vim  svnserve.conf 
+取消下面几行的注释： 
+anon-access = read            #匿名用户权限（read,write,none） 
+auth-access = write                                      #认证用户权限（read,write,none） 
+password-db = passwd                      #用户账户管理(passwd 为文件名称，这里使用了相对路径) 
+#vim passwd 
+添加svn用户 
+svnuser = password                                     #指定（用户名 = 密码） 
+导入项目 
+假如项目在/opt/TestProject 目录 
+#svn import –m “My TestProject Imported” /opt/TestProject  file:///home/svnrepos/TestProject 
+提交后提示版本为1 
+启动SVN服务器 
+#svnserve –d –r /home/svnrepos –listen-host 172.31.134.100 (Your Ip Addr) 
+注意：这里svnrepos后边不能有/,新版本的svn需要 把 –listen-host 172.31.134.100 替换成 –listen-port 3690） 
+-d: 在后台运行 
+-r: 指定svn服务器根目录 
+–listen-host: 指定监听IP 
+测试SVN 
+在其他机器上使用 svn://172.31.134.100/TestProject 
+用户名：svnuser  密码：password 
+访问svn服务。 &lt;/p&gt;
+
+&lt;p&gt;附录 A 开机自动启动svn服务 
+在 /etc/init.d 目录下谢一个脚本svnd.sh，内容如下： 
+#!/bin/bash 
+/usr/bin/svnserve -d -r /home/svnrepos 
+然后执行： 
+#update-rc.d svnd.sh defaults 
+#chmod 777 /etc/init.d/svnd.sh &lt;/p&gt;
+
+&lt;p&gt;svn ignore&lt;/p&gt;
+
+&lt;p&gt;svn propedit svn:ignore 目录名称。注意，在使用这个SVN的属性编辑前，你得确保后面的“目录名称”是SVN版本控制的目录。&lt;/p&gt;
+
+&lt;p&gt;设置SVN默认的编辑器 /etc/profile
+#export SVN_EDITOR=vim&lt;/p&gt;
+
+&lt;p&gt;svn propedit svn:ignore /product&lt;/p&gt;
+
+&lt;p&gt;此时会出现一个VIM的编辑窗口，表示需要将某个文件加入到忽略列表里&lt;/p&gt;
+
+&lt;p&gt;我们在编辑窗口中，写入&lt;/p&gt;
+
+&lt;p&gt;test.php&lt;/p&gt;
+
+&lt;p&gt;然后保存，并退出VIM编辑器。&lt;/p&gt;
+
+&lt;p&gt;这时候会有一个提示：属性 “svn:ignore” 于 “product” 被设为新值。&lt;/p&gt;
+
+&lt;p&gt;表示文件test.php的svn:ignore属性设置成功。&lt;/p&gt;
+
+&lt;p&gt;然后使用svn st查看，会显示：&lt;/p&gt;
+
+&lt;p&gt;M        product&lt;/p&gt;
+
+&lt;p&gt;我们需要提交，然后这个svn:ignore属性才会起作用&lt;/p&gt;
+
+&lt;h2 id=&quot;section&quot;&gt;设置同步脚本&lt;/h2&gt;
+&lt;p&gt;cd /www/svndata/oplinux/hooks/&lt;/p&gt;
+
+&lt;p&gt;cp post-commit.tmpl post-commit&lt;/p&gt;
+
+&lt;p&gt;编辑post-commit,在文件最后添加以下内容&lt;/p&gt;
+
+&lt;p&gt;export LANG=en_US.UTF-8&lt;/p&gt;
+
+&lt;p&gt;SVN=/usr/bin/svn&lt;/p&gt;
+
+&lt;p&gt;WEB=/www/webroot/&lt;/p&gt;
+
+&lt;p&gt;$SVN update $WEB –username rsync –password rsync&lt;/p&gt;
+
+&lt;p&gt;chown -R apache:apache $WEB&lt;/p&gt;
+
+&lt;p&gt;增加脚本执行权限
+chmod +x post-commit
+&lt;a href=&quot;http://oplinux.com/app/svn/linux-yum-install-svn.html&quot;&gt;参考1&lt;/a&gt;
+&lt;a href=&quot;http://hi.baidu.com/phplinuxmysql/item/5146931478630e0a8ebde41b&quot;&gt;参考2&lt;/a&gt;&lt;/p&gt;
+
+</description>
+        <pubDate>Tue, 09 Oct 2012 00:00:00 +0800</pubDate>
+        <link>http://xiaoshenge.github.io/skill/2012/10/09/svn/</link>
+        <guid isPermaLink="true">http://xiaoshenge.github.io/skill/2012/10/09/svn/</guid>
+        
+        <category>svn</category>
+        
+        
+        <category>skill</category>
+        
+      </item>
+    
+  </channel>
+</rss>

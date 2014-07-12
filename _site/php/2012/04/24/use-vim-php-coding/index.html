@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>使用vim作为php编码工具</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="web dev">
+    <link rel="canonical" href="http://xiaoshenge.github.io/php/2012/04/24/use-vim-php-coding/">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/main.css">
+
+</head>
+
+
+    <body>
+
+    <header class="site-header">
+
+  <div class="wrap">
+
+    <a class="site-title" href="/">xiaoshengeWiki</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+           viewBox="0 0 18 15" enable-background="new 0 0 18 15" xml:space="preserve">
+          <path fill="#505050" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0
+            h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#505050" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484
+            h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#505050" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0
+            c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+      <div class="trigger">
+        
+          <a class="page-link" href="/about/">About</a>
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrap">
+      <div class="post">
+
+  <header class="post-header">
+    <h1>使用vim作为php编码工具</h1>
+    <p class="meta">Apr 24, 2012</p>
+  </header>
+
+  <article class="post-content">
+  <h4 id="vimvimrc">vim配置（.vimrc）</h4>
+
+<pre><code>set nu #显示行数
+
+set colorscheme desert #配色方案：desert（你可以选择你喜欢的方案）
+
+set sw=4 #自动缩进的时候， 缩进尺寸为 4 个空格。
+
+set ts=4 #Tab 宽度为 4 个字符。
+
+set et #编辑时将所有 Tab 替换为空格
+
+set fileencoding=utf-8 #字符编码
+
+set nobackup #没有备份
+
+set nobomb #BOM是“Byte Order Mark”的缩写，用于标记文件的编码。并不是所有的文本编辑工具都能识别BOM标记
+
+set tags=~/.vim/tags/phptags,~/.vim/tags/cimvc #ctags用于函数间跳转，使用 Ctrl+] 就可以自动跳转至定义，Ctrl+t 可以返回上一次查看位置。
+</code></pre>
+
+<h4 id="tags">生成项目tags：</h4>
+<p>1.安装exuberant-ctags</p>
+
+<p>2.执行脚本(http://mwop.net/blog/134-exuberant-ctags-with-PHP-in-Vim.html)</p>
+
+<pre><code>!/bin/bash
+
+cd /path/to/framework/library
+
+exec ctags-exuberant -f ~/.vim/mytags/framework \
+
+-h \".php\" -R \
+
+--exclude=\"\.svn\" \
+
+--totals=yes \
+
+--tag-relative=yes \
+
+--PHP-kinds=+cf \
+
+--regex-PHP='/abstract class ([^ ]*)/\1/c/' \
+
+--regex-PHP='/interface ([^ ]*)/\1/c/' \
+
+--regex-PHP='/(public |static |abstract |protected |private )+function ([^ (]*)/\2/f/'
+</code></pre>
+
+<h2 id="httpwwwoosonetarchives197"><a href="http://www.ooso.net/archives/197">语法检查</a></h2>
+<p>php的语法检查功能：</p>
+
+<pre><code>map &lt;F5&gt; :!/usr/bin/php -l %&lt;CR&gt; f5帮助你检查php的语法错误
+</code></pre>
+
+<p>vim的语法美化功能也很方便,只要在程序的第一行,command模式下输入=:1,$,就可以把当前代码排列的井然有序.</p>
+
+<h2 id="taglist-winmanager">TagList WinManager</h2>
+<pre><code>"add TagList
+let Tlist_Show_One_File=1
+let Tlist_OnlyWindow=1
+let Tlist_Use_Right_Window=0
+let Tlist_Sort_Type='name'
+let Tlist_Exit_OnlyWindow=1
+let Tlist_Show_Menu=1
+let Tlist_Max_Submenu_Items=10
+let Tlist_Max_Tag_length=20
+let Tlist_Use_SingleClick=0
+let Tlist_Auto_Open=0
+let Tlist_Close_On_Select=0
+let Tlist_File_Fold_Auto_Close=1
+let Tlist_GainFocus_On_ToggleOpen=0
+let Tlist_Process_File_Always=1
+let Tlist_WinHeight=10
+let Tlist_WinWidth=18
+let Tlist_Use_Horiz_Window=0
+filetype plugin on
+let g:winManagerWindowLayout='FileExplorer|TagList'
+nmap wm :WMToggle&lt;cr&gt; ##迁移到mac下报错
+</code></pre>
+
+<blockquote>
+  <p>Taglist: Failed to generate tags for /my/path/to/file
+ctags: illegal option – -^@usage: ctags [-BFadtuwvx] [-f tagsfile] file …</p>
+</blockquote>
+
+<p>在talglist的<a href="http://vim-taglist.sourceforge.net/faq.html">faq</a>上找到了答案,原来taglist只支持exuberant ctags tool,不支持GNU　ctags或UNIX ctags,mac下自带的不是exuberant　ctags,所以就会有问题了,解决办法也很简单,下载<a href="http://ctags.sourceforge.net/">exuberant ctags tool</a>,然后装在一个与系统自带的ctags不冲突的路径下,然后在.vimrc里加一行let Tlist_Ctags_Cmd = ‘/path/to/ctags’就可以了.</p>
+
+<h2 id="section">自动补全</h2>
+<p>1.下载词典<a href="http://svn.php.net/viewvc/phpdoc/doc-base/trunk/funclist.txt">http://svn.php.net/viewvc/phpdoc/doc-base/trunk/funclist.txt</a></p>
+
+<p>2.设置vimrc</p>
+
+<pre><code>”只有在是PHP文件时，才启用PHP补全(ctrl+p)
+au FileType php call AddPHPFuncList()
+function AddPHPFuncList()
+	set dictionary-=~/.vim/php_funclist.txt dictionary+=~/.vim/php_funclist.txt
+	set complete-=k complete+=k
+endfunction
+</code></pre>
+
+<h2 id="section-1">备注：</h2>
+<p><a href="http://www.vim.org/scripts/script.php?script_id=2874">php syntax</a></p>
+
+<p><a href="http://www.laruence.com/2010/08/18/1718.html">将PHP Manual融入(g)Vim</a></p>
+
+<p><a href="http://www.slideshare.net/ZendCon/vim-for-php-programmers-presentation">VIM for (PHP) Programmers</a>
+<a href="http://randomclan.blog.163.com/blog/static/1453009820121015111325147/">php自动补全</a></p>
+
+<p><a href="http://coolshell.cn/articles/5426.html">简明 Vim 练级攻略</a></p>
+
+
+  </article>
+
+</div>
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrap">
+
+    <h2 class="footer-heading">xiaoshengeWiki</h2>
+
+    <div class="footer-col-1 column">
+      <ul>
+        <li>xiaoshengeWiki</li>
+        <li><a href="mailto:xiaoshengeer@gmail.com">xiaoshengeer@gmail.com</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col-2 column">
+      <ul>
+        <li>
+          <a href="https://github.com/xiaoshenge">
+            <span class="icon github">
+              <svg version="1.1" class="github-icon-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                 viewBox="0 0 16 16" enable-background="new 0 0 16 16" xml:space="preserve">
+                <path fill-rule="evenodd" clip-rule="evenodd" fill="#C2C2C2" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761
+                c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32
+                c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472
+                c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037
+                C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65
+                c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261
+                c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082
+                c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129
+                c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+              </svg>
+            </span>
+            <span class="username">xiaoshenge</span>
+          </a>
+        </li>
+        
+      </ul>
+    </div>
+
+    <div class="footer-col-3 column">
+      <p class="text">web dev</p>
+    </div>
+
+  </div>
+
+</footer>
+
+
+    </body>
+</html>

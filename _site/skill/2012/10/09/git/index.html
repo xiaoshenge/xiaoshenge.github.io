@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>如何在你自己的服务器搭建类似github的服务,git部署站点</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="web dev">
+    <link rel="canonical" href="http://xiaoshenge.github.io/skill/2012/10/09/git/">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/main.css">
+
+</head>
+
+
+    <body>
+
+    <header class="site-header">
+
+  <div class="wrap">
+
+    <a class="site-title" href="/">xiaoshengeWiki</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+           viewBox="0 0 18 15" enable-background="new 0 0 18 15" xml:space="preserve">
+          <path fill="#505050" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0
+            h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#505050" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484
+            h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#505050" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0
+            c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+      <div class="trigger">
+        
+          <a class="page-link" href="/about/">About</a>
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrap">
+      <div class="post">
+
+  <header class="post-header">
+    <h1>如何在你自己的服务器搭建类似github的服务,git部署站点</h1>
+    <p class="meta">Oct 9, 2012</p>
+  </header>
+
+  <article class="post-content">
+  <h2 id="section">分支开发</h2>
+<p><a href="http://www.oschina.net/translate/a-successful-git-branching-model">介绍一个成功的 Git 分支模型</a></p>
+
+<p><a href="http://nvie.com/posts/a-successful-git-branching-model/">A successful Git branching model</a></p>
+
+<p>前言：如果你使用git管理代码（不希望公开的），但是没有钱买github的服务，你可以再自己的服务器上搭建git服务器（这里只写支持ssh协议的，与github差的太远了，希望不要怪我这个标题党）。同时如果你用git部署项目的话，只需要一条pull命令就可以把测试机上的代码更新到线上(之前我还傻傻的登录线上机子然后pull，其实只需要在本地push一下就好)。</p>
+
+<p>参考资料：<a href="http://www.ooso.net/archives/596">《git权威指南》</a></p>
+
+<p>-.搭建支持ssh协议的git服务器</p>
+
+<p>1：linux服务器上安装好git(可以参考：<a href="http://help.github.com/linux-set-up-git/">http://help.github.com/linux-set-up-git/</a>)</p>
+
+<p>2：本地安装git软件（参考：<a href="http://help.github.com">http://help.github.com</a> 里面的set up git）</p>
+
+<p>3：给支持git操作的用户添加认证信息，在用户家目录（~/home）新建.ssh文件夹：将本地（就你开发机子上的~/.ssh/id_rsa.pub）添加到服务器上~/.ssh/authorized_keys <a href="https://help.github.com/articles/generating-ssh-keys">Generating SSH Keys</a></p>
+
+<p>4：在linux服务器上创建项目的共享版本库</p>
+
+<pre><code>git init --bare --share;
+git update-server-info
+</code></pre>
+
+<p>5:然后你就可以使用了，操作跟你操作github一样（ git clone 添加了认证信息的用户名@服务器域名（或者ip）:/项目路径）</p>
+
+<p>二.git部署你的项目</p>
+
+<p>1：.在你部署的机子上通过git clone把版本库中的代码克隆一份</p>
+
+<p>2：设置部署机上的项目git配置</p>
+
+<pre><code>git config receive.denyCurrentBranch ignore
+git config --bool receive.denyNonFastForwards false
+ 
+cd .git/hooks
+wget http://utsl.gen.nz/git/post-update
+chmod +x post-update
+</code></pre>
+
+<p>vim post-update</p>
+
+<pre><code>#!/bin/sh
+#
+# This hook does two things:
+#
+#  1. update the "info" files that allow the list of references to be
+#     queries over dumb transports such as http
+#
+#  2. if this repository looks like it is a non-bare repository, and
+#     the checked-out branch is pushed to, then update the working copy.
+#     This makes "push" function somewhat similarly to darcs and bzr.
+#
+# To enable this hook, make this file executable by "chmod +x post-update".
+
+git update-server-info
+
+is_bare=$(git config --get --bool core.bare)
+
+if [ -z "$is_bare" ]
+then
+    # for compatibility's sake, guess
+    git_dir_full=$(cd $GIT_DIR; pwd)
+    case $git_dir_full in */.git) is_bare=false;; *) is_bare=true;; esac
+fi
+
+update_wc() {
+    ref=$1
+    echo "Push to checked out branch $ref" &gt;&amp;2
+    if [ ! -f $GIT_DIR/logs/HEAD ]
+    then
+        echo "E:push to non-bare repository requires a HEAD reflog" &gt;&amp;2
+        exit 1
+    fi
+    if (cd $GIT_WORK_TREE; git diff-files -q --exit-code &gt;/dev/null)
+    then
+        wc_dirty=0
+    else
+        echo "W:unstaged changes found in working copy" &gt;&amp;2
+        wc_dirty=1
+        desc="working copy"
+    fi
+    if git diff-index --cached HEAD@{1} &gt;/dev/null
+    then
+        index_dirty=0
+    else
+        echo "W:uncommitted, staged changes found" &gt;&amp;2
+        index_dirty=1
+        if [ -n "$desc" ]
+        then
+            desc="$desc and index"
+        else
+            desc="index"
+        fi
+    fi
+    if [ "$wc_dirty" -ne 0 -o "$index_dirty" -ne 0 ]
+    then
+        new=$(git rev-parse HEAD)
+        echo "W:stashing dirty $desc - see git-stash(1)" &gt;&amp;2
+        ( trap 'echo trapped $$; git symbolic-ref HEAD "'"$ref"'"' 2 3 13 15 ERR EXIT
+        git update-ref --no-deref HEAD HEAD@{1}
+        cd $GIT_WORK_TREE
+        git stash save "dirty $desc before update to $new";
+        git symbolic-ref HEAD "$ref"
+        )
+    fi
+
+    # eye candy - show the WC updates :)
+    echo "Updating working copy" &gt;&amp;2
+    (cd $GIT_WORK_TREE
+    git diff-index -R --name-status HEAD &gt;&amp;2
+    git reset --hard HEAD)
+}
+
+if [ "$is_bare" = "false" ]
+then
+    active_branch=`git symbolic-ref HEAD`
+    export GIT_DIR=$(cd $GIT_DIR; pwd)
+    GIT_WORK_TREE=${GIT_WORK_TREE-..}
+    for ref
+    do
+        if [ "$ref" = "$active_branch" ]
+        then
+            update_wc $ref
+        fi
+    done
+fi 3:设置你本地版本库
+ 
+[remote "web"]
+    url = your-ssh-username@your-host:/var/www/yoursite/ 4:然后你就可以
+
+git psuh origin master（更新到版本库）
+git push web（更新到线上）
+</code></pre>
+
+<p>如果你有这个需求，同时我这篇文章误导你了（没看明白我写啥，可以email我）。</p>
+
+<p>——————————–华丽的分界线（以下部分是之前的自己的备忘录）———————————————</p>
+
+<p>我们知道git支持很多协议，这里想说的是本地和ssh。</p>
+
+<p>本地就是你的代码库分别在两个盘：</p>
+
+<p>在d盘的test目录生成不包含工作区的版本库</p>
+
+<p>d:/test/  git init –bare</p>
+
+<p>然后在e盘就可以用了</p>
+
+<p>e: git clone d:/test</p>
+
+<p>…</p>
+
+<p>e:/test git push oringin master</p>
+
+<p>在网络中就是通过ssh连接到你的服务器：</p>
+
+<p>在你的服务器建立git用户：</p>
+
+<p>$ sudo adduser git
+$ su git
+$ cd
+$ mkdir .ssh</p>
+
+<p>然后你自己的本地的~/.ssh/id_rsa.pub添加到服务器上~/.ssh/authorized_keys</p>
+
+<p>然后用git用户创建版本库</p>
+
+<p>cd /var/www/gitcode/test</p>
+
+<p>git init –bare –share</p>
+
+<p>git update-server-info</p>
+
+<p>然后你本地就可以使用了
+$ git clone git@youserver:/var/www/gitcode/test
+….
+$ git push origin master</p>
+
+<p>然后你就可以尽情使用git了。</p>
+
+<p>最后再次感谢github管理员在大过年的帮我解决问题（昨晚平安夜发的问题）。</p>
+
+<p>还有这个http://progit.org/，你可以学习很多git知识。</p>
+
+<p>git部署站点：</p>
+
+<p>上面说到搭建git没有工作区间的版本库，当我们需要部署该代码时候。（比如web服务器也在git版本库管理机子上）</p>
+
+<p>cd /var/www/test</p>
+
+<p>git clone /var/www/gitcode/test</p>
+
+<p>web服务器就省略了…</p>
+
+<p>也许我们是本地开发，我们本地有个版本，修改完了git push origin master</p>
+
+<p>然后在登陆到web服务器下面git pull，才实现代码一致，我想可能有简单办法，自己对git不熟悉，刚好看到这篇文章。http://www.ooso.net/archives/596</p>
+
+<p>在web部署的库中：</p>
+
+<p>git config receive.denyCurrentBranch ignore</p>
+
+<p>git config –bool receive.denyNonFastForwards false</p>
+
+<p>给web下面的代码加上git用户可写的权限，</p>
+
+<p>cd .git/hooks
+wget http://utsl.gen.nz/git/post-update
+chmod +x post-update
+在本地库加上</p>
+
+<p>[remote “webdev”]</p>
+
+<pre><code>    url = your-ssh-username@your-host:/var/www/yoursite/
+</code></pre>
+
+<p>然后你就可以</p>
+
+<p>git psuh origin master</p>
+
+<p>git push webdev</p>
+
+<p>省去了在登陆web服务器pull的步骤。</p>
+
+<p>这么强大的git了这是值得学习。</p>
+
+<p>[注]：大部分的git push失败都是有权限导致的，当push失败（除冲突除外），先去检查权限问题。</p>
+
+
+  </article>
+
+</div>
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrap">
+
+    <h2 class="footer-heading">xiaoshengeWiki</h2>
+
+    <div class="footer-col-1 column">
+      <ul>
+        <li>xiaoshengeWiki</li>
+        <li><a href="mailto:xiaoshengeer@gmail.com">xiaoshengeer@gmail.com</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col-2 column">
+      <ul>
+        <li>
+          <a href="https://github.com/xiaoshenge">
+            <span class="icon github">
+              <svg version="1.1" class="github-icon-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                 viewBox="0 0 16 16" enable-background="new 0 0 16 16" xml:space="preserve">
+                <path fill-rule="evenodd" clip-rule="evenodd" fill="#C2C2C2" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761
+                c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32
+                c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472
+                c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037
+                C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65
+                c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261
+                c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082
+                c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129
+                c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+              </svg>
+            </span>
+            <span class="username">xiaoshenge</span>
+          </a>
+        </li>
+        
+      </ul>
+    </div>
+
+    <div class="footer-col-3 column">
+      <p class="text">web dev</p>
+    </div>
+
+  </div>
+
+</footer>
+
+
+    </body>
+</html>

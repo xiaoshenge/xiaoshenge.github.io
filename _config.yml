@@ -1,0 +1,12 @@
+# Site settings
+title: xiaoshengeWiki
+email: xiaoshengeer@gmail.com
+description: "web dev"
+baseurl: ""
+url: "http://xiaoshenge.github.io"
+#twitter_username: xiaoshenge
+github_username:  xiaoshenge
+
+# Build settings
+markdown: kramdown
+permalink: pretty
