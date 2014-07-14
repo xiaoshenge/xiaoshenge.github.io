@@ -84,7 +84,7 @@ authkeys
 	auth 1
 	1 crc
 	
-###crm 配置及监控##
+##crm 配置及监控##
 
 监控：crm_mon -Afr
 
@@ -98,6 +98,13 @@ authkeys
 	crm configure rsc_defaults migration-threshold=1
 	crm configure rsc_defaults failure-timeout=10s
 	
+命令: 
+
+	crm_mon --failcounts 监控错误次数
+	
+##HA+NGINX(https)##
+
+由于https启动nginx的时候需要输入密码（也可以不输入密码，存在安全隐患），想到的解决方案是通过expect来解决，之前想到的是用expect把init的nginx脚本重写遇到问题（对expect不熟），后改为init脚本启动的时候调用expect（只需要一个start方法），由于expect加了set timeout -1导致heartbeat启动资源的时候一直在处于死循环（start, fail, stop）, 后将timeout改为5解决。
 	
 ##参考##
 [linux-ha](http://hg.linux-ha.org/)
