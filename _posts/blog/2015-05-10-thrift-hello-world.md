@@ -1,4 +1,9 @@
-#thrift "hello world"篇
+---
+layout: post
+title: thrift "hello world"篇
+category : skill
+tags : [thrift]
+---
 
 为了对thrift有一个初步的认识，这里从thrift官方tutorial入手，运行thrift的php版本的client和server。我们将用thrift（命令行工具）生成thrift文件对应的客户端和服务器端的lib库，通过python运行一个简单的web server（调用php服务），php（php-cli 命令行）来执行对应的php客户端。
 
@@ -18,6 +23,9 @@ No generator named 'haxe' could be found
 >通过phpClient.php 调用 phpServer.php
 
 ###更换nginx方式运行
+
 #####1. 将phpserver.php放置到nginx可访问的目录
-####2.去掉 phpserver.php的第一行的Shebang line
-####2.修改phpclent.php访问的phpserver.php的路径以及对应的http服务的host, port,uri
+
+#####2.去掉 phpserver.php的第一行的Shebang line
+
+#####3.修改phpclent.php访问的phpserver.php的路径以及对应的http服务的host, port,uri
