@@ -17,10 +17,10 @@ No generator named 'haxe' could be found
 执行成功后会在tutorial目录下面生成gen-php目录以及对应的文件
 
 ####3.  python runserver.py
->通过Python启动一个简易的webServer
+>tutorial/php目录，通过Python启动一个简易的webServer
 
 ####4.  php PhpClient.php --http
->通过phpClient.php 调用 phpServer.php
+>tutorial/php目录， 通过phpClient.php 调用 phpServer.php
 
 ###更换nginx方式运行
 
