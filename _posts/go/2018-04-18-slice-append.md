@@ -149,8 +149,13 @@ cap(g) =  22 ptr(g) =  0xc42008e0b0
 cap(h) =  22 ptr(h) =  0xc42008e160
 ```
 
-##
-1. 首先我要注意到2中初始化切片的方式导致a的容量是16， i的容量是11
+1. 首先我要注意到2种初始化切片的方式导致a的容量是16， i的容量是11
 2. 切片内部是由:指针(指向首地址)，长度，容量3个元素组成
-3. sliceFromLoop 中 a的长度是11，容量是16，所以向a中append的时候不会扩容, jgh的操作后得到切片还是a，但是a的长度没变，所以jgh都是覆盖a的第12个元素
-4. sliceFromLiteral 由于 i的长度是11，容量是11，所以在jhg的appen操作要扩容是都会产生新的切片，相当于jgh都是不同的切片
+3. sliceFromLoop 中 a的长度是11，容量是16，所以向a中append的时候不会扩容, jgh的操作后得到切片还是只向a的内存块，但是a的长度没变，所以jgh都是覆盖a的第12个元素
+4. sliceFromLiteral 由于 i的长度是11，容量是11，所以在jhg的appen操作要扩容是都会产生新的内存块，相当于jgh都是指向不同的内存块
+
+参考资料：
+
+[Golang slice append gotcha](https://medium.com/@Jarema./golang-slice-append-gotcha-e9020ff37374)
+
+[Golang中Slice的append详解](https://segmentfault.com/a/1190000011016431)
