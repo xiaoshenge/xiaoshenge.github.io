@@ -159,3 +159,5 @@ cap(h) =  22 ptr(h) =  0xc42008e160
 [Golang slice append gotcha](https://medium.com/@Jarema./golang-slice-append-gotcha-e9020ff37374)
 
 [Golang中Slice的append详解](https://segmentfault.com/a/1190000011016431)
+
+[Go 切片：用法和本质](https://blog.go-zh.org/go-slices-usage-and-internals)
