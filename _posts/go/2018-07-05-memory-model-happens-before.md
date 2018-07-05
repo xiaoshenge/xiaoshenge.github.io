@@ -71,7 +71,7 @@ C
 * once.Do中执行的操作，Happens Before 任何一个once.Do调用的返回。
 
 #### happens before是可以传递的
-由a happens before b和b happens before c可以得出 a happens before
+由a happens before b和b happens before c可以得出 a happens before c
 ```
 var a string
 
@@ -97,10 +97,10 @@ func hello() {
 ```
 G1 happens before E1, G1 happens before E2, 但是E1,E2的顺序没法保证，所以E2中a的值不一定可见
 
-##
+## 
 感觉多个gorountine访问全局变量，有点类似多线程访问共享内存，需要通过显示同步手段来保证可见性，所以go推荐channel来通讯，而不是共享内存来通讯。
 
-##参考资料
+## 参考资料
 
 [The Go Memory Model 中文翻译](https://legacy.gitbook.com/book/damoye/the-go-memory-model/details)
 
