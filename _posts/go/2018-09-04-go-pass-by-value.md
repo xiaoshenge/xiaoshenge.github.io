@@ -41,4 +41,7 @@ func main() {
 InitChildren 函数的参数n，在函数执行的时候，函数内的n是参数指针的一份拷贝，当改指针执向的值时候，原数据也会变更。但是这时候把n的指针改掉，不会影响原数据。参考： httprouter 的insertChild实现
 
 参考：
+
 [httprouter框架 (Gin使用的路由框架)](http://www.okyes.me/2016/05/08/httprouter.html)
+
+[Go的函数参数总是传值](https://colobu.com/2016/10/28/When-are-function-parameters-passed-by-value/)
