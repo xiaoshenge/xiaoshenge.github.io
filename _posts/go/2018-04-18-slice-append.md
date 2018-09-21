@@ -154,6 +154,25 @@ cap(h) =  22 ptr(h) =  0xc42008e160
 3. sliceFromLoop 中 a的长度是11，容量是16，所以向a中append的时候不会扩容, jgh的操作后得到切片还是只向a的内存块，但是a的长度没变，所以jgh都是覆盖a的第12个元素
 4. sliceFromLiteral 由于 i的长度是11，容量是11，所以在jhg的appen操作要扩容是都会产生新的内存块，相当于jgh都是指向不同的内存块
 
+
+```golang
+func main() {
+	var s []int
+	for i := 1; i <= 3; i++ {
+		s = append(s, i)
+	}
+	j := append(s, 100)
+	m := append(s, 101)
+
+	fmt.Println(j)
+	fmt.Println(m)
+}
+
+[1 2 3 101]
+[1 2 3 101]
+```
+这里s的cap=4，len=3, 当我们2次操作append的时候发现s都需要扩容，所以都还是执向s，所以j的值就被m覆盖了。
+
 参考资料：
 
 [Golang slice append gotcha](https://medium.com/@Jarema./golang-slice-append-gotcha-e9020ff37374)
@@ -161,3 +180,5 @@ cap(h) =  22 ptr(h) =  0xc42008e160
 [Golang中Slice的append详解](https://segmentfault.com/a/1190000011016431)
 
 [Go 切片：用法和本质](https://blog.go-zh.org/go-slices-usage-and-internals)
+
+[Why are slices sometimes altered when passed by value in Go?](https://www.calhoun.io/why-are-slices-sometimes-altered-when-passed-by-value-in-go/)
