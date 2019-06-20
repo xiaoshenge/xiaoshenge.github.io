@@ -111,3 +111,5 @@ G1 happens before E1, G1 happens before E2, 但是E1,E2的顺序没法保证，�
 [Happens before](http://ifeve.com/happens-before/)
 
 [happens-before俗解](http://ifeve.com/easy-happens-before/)
+
+[Go中的内存顺序保证](https://gfw.go101.org/article/memory-model.html)
